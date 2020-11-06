@@ -1,0 +1,39 @@
+def versions = [
+        kotlin            : '1.4.10',
+        websocket         : '1.5.1',
+        intelliJPlugin    : '0.4.8',
+        minIntelliJ       : '2018.1',
+        discoveryLib      : '1.3.0',
+        discoveryPluginLib: '1.4.0',
+        sqlite            : '3.31.1',
+        dokkaPlugin       : '0.9.17',
+        versionsPlugin    : '0.21.0',
+        commonText        : '1.8',
+]
+
+ext.versions = versions
+
+def gradlePlugins = [
+        kotlin  : "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}",
+        versions: "com.github.ben-manes:gradle-versions-plugin:${versions.versionsPlugin}",
+        dokka   : "org.jetbrains.dokka:dokka-gradle-plugin:${versions.dokkaPlugin}",
+        intelliJ: "gradle.plugin.org.jetbrains.intellij.plugins:gradle-intellij-plugin:${versions.intelliJPlugin}",
+]
+
+def pluginCompile = [
+        kotlin      : "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${versions.kotlin}",
+        discoveryLib: "com.chimerapps:discovery-plugin-ui:${versions.discoveryPluginLib}",
+        commonText  : "org.apache.commons:commons-text:${versions.commonText}",
+        websocket   : "org.java-websocket:Java-WebSocket:${versions.websocket}",
+]
+
+def libTestCompile = [
+        junit4: "junit:junit:${versions.junit4}",
+        mockk : "io.mockk:mockk:${versions.mockk}",
+]
+
+ext.deps = [
+        'gradlePlugins' : gradlePlugins,
+        'libTestCompile': libTestCompile,
+        'pluginCompile' : pluginCompile,
+]

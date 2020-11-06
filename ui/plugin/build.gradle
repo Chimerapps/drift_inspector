@@ -1,0 +1,115 @@
+apply from: '../dependencies.gradle'
+
+apply plugin: "org.jetbrains.intellij"
+apply plugin: 'kotlin'
+
+def actualPluginVersion = hasProperty("internalBuildNumber") ? "$pluginVersion-$internalBuildNumber" : "$pluginVersion"
+
+def localProperties = new Properties()
+localProperties.load(project.rootProject.file('local.properties').newDataInputStream())
+def StudioCompilePath = localProperties.getProperty('StudioCompilePath')
+
+group 'com.icapps'
+version actualPluginVersion
+sourceCompatibility = 1.8
+
+intellij {
+    version versions.minIntelliJ
+    updateSinceUntilBuild false
+//    plugins "Dart:192.6459", "java"
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+
+sourceSets {
+    main.java.srcDirs += "src/main/kotlin"
+}
+
+configurations {
+    patch
+    [implementation]*.exclude module: 'gson'
+}
+
+dependencies {
+//    compileOnly fileTree(dir: "$StudioCompilePath/plugins/android/lib", include: ['*.jar'])
+    compileOnly fileTree(dir: "$StudioCompilePath/lib", include: ['*.jar'])
+    compile files("lib/gson-2.8.6.patched.jar")
+
+    deps.pluginCompile.each { name, dep ->
+        implementation(dep) {
+            exclude group: 'org.slf4j', module: 'slf4j-api'
+        }
+    }
+    patch('com.google.code.gson:gson:2.8.6')
+    patch('com.googlecode.jarjar:jarjar:1.3')
+}
+
+tasks.create("buildTranslationsEnum") {
+    doLast {
+        def translationProperties = new Properties()
+        translationProperties.load(project.rootProject.file("plugin/src/main/resources/translations/translations.properties").newInputStream())
+
+        def file = project.rootProject.file("plugin/src/main/kotlin/com/chimerapps/moorinspector/ui/util/localization/Tr.kt")
+        file.write "package com.chimerapps.moorinspector.ui.util.localization\n\n"
+        file << "enum class Tr(val key: String) {\n"
+        def sorted = new TreeSet<String>()
+        translationProperties.propertyNames().each {
+            sorted.add(it.toString());
+        }
+        def c = 0
+        sorted.each { string ->
+            def parts = string.split('\\.')
+            def str = ""
+            for (int i = 1; i < parts.length; ++i) {
+                str += parts[i].capitalize()
+            }
+            file << "    $str(\"$string\")${(++c == sorted.size()) ? ";" : ","} //${translationProperties.getProperty(string).replaceAll("\n","\\\\n")}\n"
+        }
+        file << "\n    fun tr(vararg arguments: Any) : String {\n"
+        file << "        val raw = Localization.getString(key)\n"
+        file << "        if (arguments.isEmpty()) return raw\n"
+        file << "        return String.format(raw, *arguments)\n"
+        file << "    }\n"
+        file << "}"
+    }
+}
+
+task downloadPatchLibs(type: Copy) {
+    into('lib')
+    from(configurations.patch)
+    exclude('jarjar*')
+    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+}
+
+task applyPatch(dependsOn: 'downloadPatchLibs') {
+    doLast {
+        project.ant {
+            taskdef name: "jarjar", classname: "com.tonicsystems.jarjar.JarJarTask", classpath: configurations.patch.asPath
+            jarjar(jarfile: 'lib/gson-2.8.6.patched.jar', filesetmanifest: "merge") {
+                zipfileset(src: 'lib/gson-2.8.6.jar')
+                rule pattern: "com.google.gson.**", result: "com.google.gsonpackaged.@1"
+            }
+        }
+    }
+}
+
+task cleanupDownloadPatchLibs(type: Delete, dependsOn: 'applyPatch') {
+    delete 'lib/gson-2.8.6.jar'
+}
+
+task maybePatch {
+    if (new File('lib/gson-2.8.6.patched.jar').exists()) return
+    dependsOn applyPatch
+    dependsOn cleanupDownloadPatchLibs
+}
+compileKotlin.dependsOn(maybePatch)
+
+task cleanPatch(type: Delete) {
+    delete 'lib'
+}
+clean.dependsOn(cleanPatch)

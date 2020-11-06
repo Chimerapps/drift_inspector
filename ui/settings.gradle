@@ -1,0 +1,3 @@
+rootProject.name = 'moor_inspector_ui'
+
+include 'plugin'

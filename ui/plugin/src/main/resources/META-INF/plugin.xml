@@ -1,0 +1,40 @@
+<idea-plugin>
+    <id>com.chimerapps.moorinspector</id>
+    <name>Moor Inspector</name>
+    <version>0.1.0</version>
+    <vendor email="support@chimerapps.com" url="https://www.chimerapps.com">Chimerapps</vendor>
+
+    <description>This plugin enables the moor inspector ui inside the IDE</description>
+
+    <!--    <change-notes><![CDATA[-->
+    <!--    <p>-->
+    <!--        <b>0.1.0 - First release</b>-->
+    <!--    </p>-->
+    <!--        ]]>-->
+    <!--    </change-notes>-->
+
+    <idea-version since-build="181.0"/>
+
+    <depends>com.intellij.modules.lang</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <toolWindow id="Moor Inspector" anchor="bottom"
+                    factoryClass="com.chimerapps.moorinspector.ui.InspectorToolWindowFactory"
+                    icon="/niddler_small.png"/>
+        <!--        <applicationConfigurable instance="com.chimerapps.niddler.ui.settings.ApplicationConfigurationProvider" id="NiddlerRoot" />-->
+        <!--        <projectConfigurable instance="com.chimerapps.niddler.ui.settings.ProjectConfigurationProvider" parentId="NiddlerRoot" />-->
+        <applicationService
+                serviceImplementation="com.chimerapps.moorinspector.ui.settings.MoorInspectorSettings"/>
+        <!--        <projectService serviceImplementation="com.chimerapps.niddler.ui.settings.NiddlerProjectSettings" />-->
+
+        <!--        <postStartupActivity implementation="com.chimerapps.niddler.ui.provider.ProjectStartupActivity" />-->
+
+        <!--        <consoleFilterProvider implementation="com.chimerapps.niddler.ui.provider.ConnectConsoleFilterProvider" order="first" />-->
+
+    </extensions>
+
+    <actions>
+
+    </actions>
+
+</idea-plugin>
