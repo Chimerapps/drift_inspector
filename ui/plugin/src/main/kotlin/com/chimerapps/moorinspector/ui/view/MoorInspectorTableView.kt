@@ -2,60 +2,112 @@ package com.chimerapps.moorinspector.ui.view
 
 import com.chimerapps.moorinspector.client.protocol.MoorInspectorColumn
 import com.chimerapps.moorinspector.client.protocol.MoorInspectorTable
+import com.chimerapps.moorinspector.ui.util.NotificationUtil
 import com.chimerapps.moorinspector.ui.util.ensureMain
+import com.chimerapps.moorinspector.ui.util.list.ListUpdateHelper
+import com.chimerapps.moorinspector.ui.util.sql.SqlUtil
+import com.intellij.openapi.project.Project
 import com.intellij.ui.ScrollPaneFactory
+import com.intellij.ui.SearchTextField
 import com.intellij.ui.table.TableView
 import com.intellij.util.PlatformIcons
 import com.intellij.util.ui.ColumnInfo
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.ListTableModel
+import net.sf.jsqlparser.parser.CCJSqlParserManager
+import net.sf.jsqlparser.statement.delete.Delete
+import net.sf.jsqlparser.statement.select.Select
+import net.sf.jsqlparser.statement.update.Update
 import java.awt.BorderLayout
+import java.io.StringReader
 import java.util.*
 import javax.swing.JPanel
 import javax.swing.ListSelectionModel
 import javax.swing.table.JTableHeader
 
 
-class MoorInspectorTableView(private val helper: MoorInspectorTableQueryHelper) : JPanel(BorderLayout()) {
+class MoorInspectorTableView(
+    private val helper: MoorInspectorTableQueryHelper,
+    private val project: Project
+) : JPanel(BorderLayout()) {
 
     private val table = TableView<TableRow>().also {
         val header: JTableHeader = it.tableHeader
-//        header.addMouseMotionListener(object : MouseMotionAdapter() {
-//            override fun mouseMoved(e: MouseEvent) {
-//                updateTooltip(e)
-//            }
-//        })
-//        header.addMouseListener(object : MouseAdapter() {
-//            override fun mouseEntered(e: MouseEvent) {
-//                updateTooltip(e)
-//            }
-//        })
+
         header.reorderingAllowed = false
 
-        it.rowHeight = PlatformIcons.CLASS_ICON.iconHeight
+        it.rowHeight = PlatformIcons.CLASS_ICON.iconHeight * 2
         it.preferredScrollableViewportSize = JBUI.size(-1, 150)
         it.setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
 
     }
 
+    private val rawQuery = object : SearchTextField(true, "moor_inspector_query") {
+        override fun onFocusLost() {
+            //Don't save
+        }
+    }
+
     private var currentRequestId: String? = null
     private var currentDbId: String? = null
     private var currentTable: MoorInspectorTable? = null
+    private var listUpdateHelper: ListUpdateHelper<TableRow>? = null
 
     init {
+        add(rawQuery, BorderLayout.NORTH)
+
+        rawQuery.textEditor.addActionListener {
+            checkAndExecuteRawQuery(rawQuery.text.trim())
+        }
+
         add(ScrollPaneFactory.createScrollPane(table), BorderLayout.CENTER)
+    }
+
+    private fun checkAndExecuteRawQuery(rawQuery: String) {
+        val dbId = currentDbId ?: return
+        try {
+            when (val statement = CCJSqlParserManager().parse(StringReader(rawQuery))) {
+                is Select -> {
+                    currentRequestId = UUID.randomUUID().toString()
+                    helper.query(currentRequestId!!, dbId, rawQuery)
+                }
+                is Update -> {
+                    currentRequestId = UUID.randomUUID().toString()
+                    helper.updateItem(currentRequestId!!, dbId, rawQuery, listOf(statement.table.name))
+                }
+                is Delete -> {
+                    currentRequestId = UUID.randomUUID().toString()
+                    helper.updateItem(currentRequestId!!, dbId, rawQuery, listOf(statement.table.name))
+                }
+                else -> {
+                    NotificationUtil.info("Not supported", "Sql statement not yet supported", project)
+                }
+            }
+            this.rawQuery.addCurrentTextToHistory()
+            //TODO
+        } catch (e: Throwable) {
+            NotificationUtil.error("Invalid sql", "Failed to parse sql statement: ${e.message}", project)
+            //TODO
+        }
     }
 
     fun update(dbId: String, table: MoorInspectorTable) {
         currentDbId = dbId
         currentTable = table
-        this.table.setModelAndUpdateColumns(
-            ListTableModel(
-                table.columns.map { TableViewColumnInfo(it, table) }.toTypedArray(),
-                listOf(TableRow(emptyMap())),
-                0
-            )
+
+        val model = ListTableModel(
+            table.columns.map { TableViewColumnInfo(it, table) }.toTypedArray(),
+            listOf(TableRow(emptyMap())),
+            0
         )
+
+        listUpdateHelper = ListUpdateHelper(model) { o1, o2 ->
+            val o1data = o1.data
+            val o2data = o2.data
+            if (o1data == o2data) 0 else -1
+        }
+
+        this.table.setModelAndUpdateColumns(model)
         this.table.updateColumnSizes()
 
         refresh()
@@ -106,7 +158,7 @@ class MoorInspectorTableView(private val helper: MoorInspectorTableQueryHelper) 
 
         when (type.toLowerCase(Locale.getDefault())) {
             "bit", "tinyint", "smallint", "int", "bigint", "decimal", "numeric", "float", "real", "integer" -> return "$keyData"
-            "char", "varchar", "text", "nchar", "nvarchar", "ntext" -> return "'$keyData'"
+            "char", "varchar", "text", "nchar", "nvarchar", "ntext" -> return "'${SqlUtil.escape(keyData.toString())}'"
             "date", "time", "datetime", "timestamp", "year" -> return "$keyData"
         }
         throw IllegalStateException("Don't know how to match type: $type")
@@ -117,9 +169,10 @@ class MoorInspectorTableView(private val helper: MoorInspectorTableQueryHelper) 
         val type = table.columns.find { it.name == column }?.type
             ?: throw IllegalStateException("Could create statement for column, column not found")
 
+
         when (type.toLowerCase(Locale.getDefault())) {
             "bit", "tinyint", "smallint", "int", "bigint", "decimal", "numeric", "float", "real", "integer" -> return "= $keyData"
-            "char", "varchar", "text", "nchar", "nvarchar", "ntext" -> return "= '$keyData'"
+            "char", "varchar", "text", "nchar", "nvarchar", "ntext" -> return "= '${SqlUtil.escape(keyData.toString())}'"
             "date", "time", "datetime", "timestamp", "year" -> return "= $keyData"
         }
         throw IllegalStateException("Don't know how to match type: $type")
@@ -129,10 +182,7 @@ class MoorInspectorTableView(private val helper: MoorInspectorTableQueryHelper) 
         currentDbId?.let { dbId ->
             currentTable?.let { table ->
                 currentRequestId = UUID.randomUUID().toString()
-                if (table.withoutRowId)
-                    helper.query(currentRequestId!!, dbId, "SELECT * FROM ${table.sqlName}")
-                else
-                    helper.query(currentRequestId!!, dbId, "SELECT rowid,* FROM ${table.sqlName}")
+                helper.query(currentRequestId!!, dbId, "SELECT * FROM ${table.sqlName}")
             }
         }
     }
@@ -141,8 +191,7 @@ class MoorInspectorTableView(private val helper: MoorInspectorTableQueryHelper) 
         if (currentRequestId != requestId) return
 
         ensureMain {
-            @Suppress("UNCHECKED_CAST")
-            (table.model as ListTableModel<TableRow>).items = data.map { TableRow(it) }
+            listUpdateHelper?.onListUpdated(data.map { TableRow(it) })
         }
     }
 

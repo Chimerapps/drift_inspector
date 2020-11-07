@@ -9,6 +9,7 @@ def versions = [
         dokkaPlugin       : '0.9.17',
         versionsPlugin    : '0.21.0',
         commonText        : '1.8',
+        sqlParser         : '3.2',
 ]
 
 ext.versions = versions
@@ -25,6 +26,7 @@ def pluginCompile = [
         discoveryLib: "com.chimerapps:discovery-plugin-ui:${versions.discoveryPluginLib}",
         commonText  : "org.apache.commons:commons-text:${versions.commonText}",
         websocket   : "org.java-websocket:Java-WebSocket:${versions.websocket}",
+        sqlParser   : "com.github.jsqlparser:jsqlparser:${versions.sqlParser}",
 ]
 
 def libTestCompile = [

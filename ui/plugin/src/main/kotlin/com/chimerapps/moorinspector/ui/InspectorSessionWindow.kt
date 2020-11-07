@@ -52,7 +52,7 @@ class InspectorSessionWindow(
     private val tablesView = MoorInspectorTablesView() { db, table ->
         tableView.update(db.id, table)
     }
-    private val tableView = MoorInspectorTableView(this)
+    private val tableView = MoorInspectorTableView(this, project)
 
     var connectionMode: ConnectionMode = ConnectionMode.MODE_DISCONNECTED
         private set(value) {
