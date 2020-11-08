@@ -2,7 +2,7 @@ def versions = [
         kotlin            : '1.4.10',
         websocket         : '1.5.1',
         intelliJPlugin    : '0.4.8',
-        minIntelliJ       : '2018.1',
+        minIntelliJ       : '2018.2',
         discoveryLib      : '1.3.0',
         discoveryPluginLib: '1.4.0',
         sqlite            : '3.31.1',

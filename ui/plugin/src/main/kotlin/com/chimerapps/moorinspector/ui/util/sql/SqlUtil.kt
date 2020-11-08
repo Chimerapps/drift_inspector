@@ -14,7 +14,6 @@ object SqlUtil {
             .replace("'", "\\'")
             .replace("\"", "\\\"")
             .replace("%", "\\%")
-            .replace("_", "\\_")
     }
 
 }

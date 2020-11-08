@@ -15,6 +15,7 @@ import com.chimerapps.moorinspector.ui.actions.ConnectAction
 import com.chimerapps.moorinspector.ui.actions.DisconnectAction
 import com.chimerapps.moorinspector.ui.settings.MoorInspectorSettings
 import com.chimerapps.moorinspector.ui.util.ensureMain
+import com.chimerapps.moorinspector.ui.util.preferences.AppPreferences
 import com.chimerapps.moorinspector.ui.view.MoorInspectorStatusBar
 import com.chimerapps.moorinspector.ui.view.MoorInspectorTableQueryHelper
 import com.chimerapps.moorinspector.ui.view.MoorInspectorTableView
@@ -24,7 +25,7 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.Splitter
+import com.intellij.ui.JBSplitter
 import com.intellij.ui.content.Content
 import com.intellij.util.IconUtil
 import java.awt.BorderLayout
@@ -40,6 +41,7 @@ class InspectorSessionWindow(
 
     companion object {
         private const val DEFAULT_IDEVICE_PATH = "/usr/local/bin"
+        private const val APP_PREFERENCE_SPLITTER_STATE = "${AppPreferences.PREFIX}detailSplitter"
     }
 
     lateinit var content: Content
@@ -66,7 +68,7 @@ class InspectorSessionWindow(
         add(rootContent, BorderLayout.CENTER)
         add(statusBar, BorderLayout.SOUTH)
 
-        val splitter = Splitter()
+        val splitter = JBSplitter(APP_PREFERENCE_SPLITTER_STATE, 0.2f)
         splitter.firstComponent = tablesView
         splitter.secondComponent = tableView
 

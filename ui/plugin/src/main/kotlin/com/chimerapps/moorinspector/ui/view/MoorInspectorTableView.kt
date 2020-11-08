@@ -2,10 +2,14 @@ package com.chimerapps.moorinspector.ui.view
 
 import com.chimerapps.moorinspector.client.protocol.MoorInspectorColumn
 import com.chimerapps.moorinspector.client.protocol.MoorInspectorTable
+import com.chimerapps.moorinspector.ui.actions.RefreshAction
 import com.chimerapps.moorinspector.ui.util.NotificationUtil
 import com.chimerapps.moorinspector.ui.util.ensureMain
 import com.chimerapps.moorinspector.ui.util.list.ListUpdateHelper
 import com.chimerapps.moorinspector.ui.util.sql.SqlUtil
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.ActionToolbar
+import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.project.Project
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.SearchTextField
@@ -16,6 +20,7 @@ import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.ListTableModel
 import net.sf.jsqlparser.parser.CCJSqlParserManager
 import net.sf.jsqlparser.statement.delete.Delete
+import net.sf.jsqlparser.statement.insert.Insert
 import net.sf.jsqlparser.statement.select.Select
 import net.sf.jsqlparser.statement.update.Update
 import java.awt.BorderLayout
@@ -52,35 +57,67 @@ class MoorInspectorTableView(
     private var currentDbId: String? = null
     private var currentTable: MoorInspectorTable? = null
     private var listUpdateHelper: ListUpdateHelper<TableRow>? = null
+    private var currentConfirmedSelectStatement: String? = null
+    private val toolbar: ActionToolbar
+    private val refreshAction: RefreshAction
 
     init {
-        add(rawQuery, BorderLayout.NORTH)
+        val actionGroup = DefaultActionGroup()
+
+        refreshAction = RefreshAction("Refresh", "Refresh") {
+            refresh()
+        }
+        actionGroup.addAction(refreshAction)
+
+        toolbar = ActionManager.getInstance().createActionToolbar("Moore Inspector", actionGroup, false)
 
         rawQuery.textEditor.addActionListener {
             checkAndExecuteRawQuery(rawQuery.text.trim())
         }
 
-        add(ScrollPaneFactory.createScrollPane(table), BorderLayout.CENTER)
+        val contentPanel = JPanel(BorderLayout())
+        contentPanel.add(rawQuery, BorderLayout.NORTH)
+
+        contentPanel.add(ScrollPaneFactory.createScrollPane(table), BorderLayout.CENTER)
+
+        add(toolbar.component, BorderLayout.WEST)
+        add(contentPanel, BorderLayout.CENTER)
     }
 
     private fun checkAndExecuteRawQuery(rawQuery: String) {
         val dbId = currentDbId ?: return
+        currentConfirmedSelectStatement = null
+        if (rawQuery.isBlank()) {
+            refresh()
+            return
+        }
+
         try {
             when (val statement = CCJSqlParserManager().parse(StringReader(rawQuery))) {
                 is Select -> {
+                    currentConfirmedSelectStatement = rawQuery.trim()
                     currentRequestId = UUID.randomUUID().toString()
                     helper.query(currentRequestId!!, dbId, rawQuery)
                 }
                 is Update -> {
                     currentRequestId = UUID.randomUUID().toString()
+                    markRefreshing()
                     helper.updateItem(currentRequestId!!, dbId, rawQuery, listOf(statement.table.name))
                 }
                 is Delete -> {
                     currentRequestId = UUID.randomUUID().toString()
+                    markRefreshing()
+                    helper.updateItem(currentRequestId!!, dbId, rawQuery, listOf(statement.table.name))
+                }
+                is Insert -> {
+                    currentRequestId = UUID.randomUUID().toString()
+                    markRefreshing()
                     helper.updateItem(currentRequestId!!, dbId, rawQuery, listOf(statement.table.name))
                 }
                 else -> {
-                    NotificationUtil.info("Not supported", "Sql statement not yet supported", project)
+                    currentRequestId = UUID.randomUUID().toString()
+                    markRefreshing()
+                    helper.updateItem(currentRequestId!!, dbId, rawQuery, listOf())
                 }
             }
             this.rawQuery.addCurrentTextToHistory()
@@ -94,6 +131,8 @@ class MoorInspectorTableView(
     fun update(dbId: String, table: MoorInspectorTable) {
         currentDbId = dbId
         currentTable = table
+        rawQuery.text = ""
+        currentConfirmedSelectStatement = null
 
         val model = ListTableModel(
             table.columns.map { TableViewColumnInfo(it, table) }.toTypedArray(),
@@ -146,6 +185,7 @@ class MoorInspectorTableView(
 
         currentDbId?.let { databaseId ->
             currentRequestId = UUID.randomUUID().toString()
+            refreshAction.refreshing = true
             helper.updateItem(currentRequestId!!, databaseId, query, listOf(table.sqlName))
         }
     }
@@ -182,22 +222,37 @@ class MoorInspectorTableView(
         currentDbId?.let { dbId ->
             currentTable?.let { table ->
                 currentRequestId = UUID.randomUUID().toString()
-                helper.query(currentRequestId!!, dbId, "SELECT * FROM ${table.sqlName}")
+                val activeSelect = currentConfirmedSelectStatement
+                markRefreshing()
+                if (activeSelect != null) {
+                    helper.query(currentRequestId!!, dbId, activeSelect)
+                } else {
+                    helper.query(currentRequestId!!, dbId, "SELECT * FROM ${table.sqlName}")
+                }
             }
         }
     }
 
     fun onQueryResults(requestId: String, data: List<Map<String, Any?>>) {
-        if (currentRequestId != requestId) return
-
         ensureMain {
+            if (currentRequestId != requestId) return@ensureMain
+
+            refreshAction.refreshing = false
+            toolbar.updateActionsImmediately()
             listUpdateHelper?.onListUpdated(data.map { TableRow(it) })
         }
     }
 
     fun onUpdateComplete(requestId: String) {
-        if (currentRequestId != requestId) return
-        refresh()
+        ensureMain {
+            if (currentRequestId != requestId) return@ensureMain
+            refresh()
+        }
+    }
+
+    private fun markRefreshing() {
+        refreshAction.refreshing = true
+        toolbar.updateActionsImmediately()
     }
 
     private inner class TableViewColumnInfo(val column: MoorInspectorColumn, private val table: MoorInspectorTable) :
@@ -210,7 +265,8 @@ class MoorInspectorTableView(
         }
 
         override fun setValue(item: TableRow, value: String?) {
-            buildUpdateQuery(table, column, item, value)
+            if (item.data[column.name]?.toString() != value)
+                buildUpdateQuery(table, column, item, value)
         }
     }
 
