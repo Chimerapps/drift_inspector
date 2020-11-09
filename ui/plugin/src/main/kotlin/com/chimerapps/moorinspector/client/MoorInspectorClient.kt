@@ -5,6 +5,7 @@ import com.chimerapps.discovery.utils.logger
 import com.chimerapps.moorinspector.client.protocol.MoorInspectorProtocol
 import com.chimerapps.moorinspector.client.protocol.MoorInspectorServerInfo
 import com.chimerapps.moorinspector.client.protocol.MoorInspectorV1ProtocolHandler
+import com.chimerapps.moorinspector.ui.view.BulkActionData
 import com.chimerapps.moorinspector.ui.view.MoorInspectorVariable
 import com.google.gsonpackaged.Gson
 import com.google.gsonpackaged.JsonArray
@@ -78,6 +79,10 @@ class MoorInspectorClient(serverURI: URI) : MoorInspectorMessageListener, Closea
         clientListeners.forEach { it.onError(requestId, message) }
     }
 
+    override fun onBulkUpdateResult(requestId: String) {
+        clientListeners.forEach { it.onBulkUpdateResult(requestId) }
+    }
+
     fun query(requestId: String, databaseId: String, query: String) {
         socketClient.sendString("{\"type\":\"filter\", \"body\": {\"databaseId\":\"$databaseId\",\"requestId\":\"$requestId\",\"query\":\"$query\"}}")
     }
@@ -103,6 +108,31 @@ class MoorInspectorClient(serverURI: URI) : MoorInspectorMessageListener, Closea
         })
         socketClient.sendString(json.toString())
     }
+
+    fun bulkUpdate(requestId: String, databaseId: String, data: List<BulkActionData>) {
+        val gson = Gson()
+        val json = JsonObject()
+        json.addProperty("type", "batch")
+        json.add("body", JsonObject().also { body ->
+            body.addProperty("requestId", requestId)
+            body.add("actions", JsonArray().also { array ->
+                data.forEach { action ->
+                    array.add(JsonObject().also { actionWrapper ->
+                        actionWrapper.addProperty("type", "update")
+                        actionWrapper.add("body", JsonObject().also { actionBody ->
+                            actionBody.addProperty("databaseId", databaseId)
+                            actionBody.addProperty("query", action.query)
+                            actionBody.add("affectedTables", JsonArray().also { array ->
+                                action.affectedTables.forEach { array.add(it) }
+                            })
+                            actionBody.add("variables", gson.toJsonTree(action.variables))
+                        })
+                    })
+                }
+            })
+        })
+        socketClient.sendString(json.toString())
+    }
 }
 
 interface MoorInspectorMessageListener {
@@ -114,6 +144,8 @@ interface MoorInspectorMessageListener {
     fun onFilterData(tableId: String, requestId: String, rows: List<Map<String, Any?>>) {}
 
     fun onUpdateResult(tableId: String, requestId: String, numRowsUpdated: Int) {}
+
+    fun onBulkUpdateResult(requestId: String) {}
 
     fun onServerInfo(serverInfo: MoorInspectorServerInfo) {}
 

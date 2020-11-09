@@ -7,6 +7,7 @@ import com.chimerapps.moorinspector.ui.util.NotificationUtil
 import com.chimerapps.moorinspector.ui.util.ensureMain
 import com.chimerapps.moorinspector.ui.util.list.DiffUtilComparator
 import com.chimerapps.moorinspector.ui.util.list.ListUpdateHelper
+import com.chimerapps.moorinspector.ui.util.mapNotNull
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.actionSystem.DefaultActionGroup
@@ -24,13 +25,18 @@ import net.sf.jsqlparser.statement.insert.Insert
 import net.sf.jsqlparser.statement.select.Select
 import net.sf.jsqlparser.statement.update.Update
 import java.awt.BorderLayout
+import java.awt.Component
+import java.awt.event.KeyAdapter
+import java.awt.event.KeyEvent
 import java.io.StringReader
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.util.*
+import javax.swing.DefaultCellEditor
 import javax.swing.JPanel
 import javax.swing.ListSelectionModel
 import javax.swing.table.JTableHeader
+import javax.swing.table.TableCellEditor
 
 
 class MoorInspectorTableView(
@@ -38,15 +44,43 @@ class MoorInspectorTableView(
     private val project: Project
 ) : JPanel(BorderLayout()) {
 
-    private val table = TableView<TableRow>().also {
+    private val table = object : TableView<TableRow>() {
+        override fun prepareEditor(editor: TableCellEditor?, row: Int, column: Int): Component {
+            (editor as? DefaultCellEditor)?.clickCountToStart = 2
+            return super.prepareEditor(editor, row, column)
+        }
+    }.also {
         val header: JTableHeader = it.tableHeader
 
         header.reorderingAllowed = false
 
         it.rowHeight = PlatformIcons.CLASS_ICON.iconHeight * 2
         it.preferredScrollableViewportSize = JBUI.size(-1, 150)
-        it.setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
+        it.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION)
 
+        it.addKeyListener(object : KeyAdapter() {
+            override fun keyPressed(e: KeyEvent) {
+                super.keyPressed(e)
+                currentDbId?.let { dbId ->
+                    currentTable?.let { currentTable ->
+                        listUpdateHelper?.let { list ->
+                            if (e.keyCode == KeyEvent.VK_DELETE || e.keyCode == KeyEvent.VK_BACK_SPACE) {
+                                val queriesToExecute = it.selectedRows.mapNotNull { row ->
+                                    val data = list.dataAtRow(row) ?: return@mapNotNull null
+                                    val variables = mutableListOf<MoorInspectorVariable>()
+                                    val query = buildString {
+                                        append("DELETE FROM ${currentTable.sqlName} ")
+                                        append(createMatch(data, currentTable, variables))
+                                    }
+                                    query to variables
+                                }
+                                executeBulkQuery(queriesToExecute)
+                            }
+                        }
+                    }
+                }
+            }
+        })
     }
 
     private val rawQuery = object : SearchTextField(true, "moor_inspector_query") {
@@ -94,40 +128,16 @@ class MoorInspectorTableView(
             return
         }
 
-        try {
-            when (val statement = CCJSqlParserManager().parse(StringReader(rawQuery))) {
-                is Select -> {
-                    currentConfirmedSelectStatement = rawQuery.trim()
-                    currentRequestId = UUID.randomUUID().toString()
-                    helper.query(currentRequestId!!, dbId, rawQuery)
-                }
-                is Update -> {
-                    currentRequestId = UUID.randomUUID().toString()
-                    markRefreshing()
-                    helper.updateItem(currentRequestId!!, dbId, rawQuery, listOf(statement.table.name), emptyList())
-                }
-                is Delete -> {
-                    currentRequestId = UUID.randomUUID().toString()
-                    markRefreshing()
-                    helper.updateItem(currentRequestId!!, dbId, rawQuery, listOf(statement.table.name), emptyList())
-                }
-                is Insert -> {
-                    currentRequestId = UUID.randomUUID().toString()
-                    markRefreshing()
-                    helper.updateItem(currentRequestId!!, dbId, rawQuery, listOf(statement.table.name), emptyList())
-                }
-                else -> {
-                    currentRequestId = UUID.randomUUID().toString()
-                    markRefreshing()
-                    helper.updateItem(currentRequestId!!, dbId, rawQuery, listOf(), emptyList())
-                }
-            }
+        val tables = getAffectedTables(rawQuery, updateActive = true)
+
+        currentRequestId = UUID.randomUUID().toString()
+        markRefreshing()
+        if (rawQuery.startsWith("SELECT"))
+            helper.query(currentRequestId!!, dbId, rawQuery)
+        else
+            helper.updateItem(currentRequestId!!, dbId, rawQuery, tables.orEmpty(), emptyList())
+        if (tables != null)
             this.rawQuery.addCurrentTextToHistory()
-            //TODO
-        } catch (e: Throwable) {
-            NotificationUtil.error("Invalid sql", "Failed to parse sql statement: ${e.message}", project)
-            //TODO
-        }
     }
 
     fun update(dbId: String, table: MoorInspectorTable) {
@@ -166,20 +176,7 @@ class MoorInspectorTableView(
 
             variables += makeVariable(column, newValue)
 
-            val primaryKeys = table.primaryKey
-            if (primaryKeys != null) {
-                append("WHERE ")
-                primaryKeys.forEachIndexed { index, column ->
-                    if (index > 0)
-                        append(" AND ")
-                    val keyData = data.data[column]
-                    append(column)
-                    append(" ")
-                    append(equalsForKey(keyData, table, column, variables))
-                }
-            } else if (!table.withoutRowId && data.data.entries.any { it.key.equals("rowid", ignoreCase = true) }) {
-                append("WHERE rowid = ${data.data.entries.find { it.key.equals("rowid", ignoreCase = true) }?.value}")
-            }
+            append(createMatch(data, table, variables))
         }
 
         currentDbId?.let { databaseId ->
@@ -238,7 +235,17 @@ class MoorInspectorTableView(
         return "=?"
     }
 
-    fun refresh() {
+    private fun executeBulkQuery(queriesToExecute: List<Pair<String, MutableList<MoorInspectorVariable>>>) {
+        currentDbId?.let { dbId ->
+            currentRequestId = UUID.randomUUID().toString()
+            markRefreshing()
+            helper.bulkUpdate(currentRequestId!!, dbId, queriesToExecute.map { (query, variables) ->
+                BulkActionData(query, variables = variables, affectedTables = getAffectedTables(query, false).orEmpty())
+            })
+        }
+    }
+
+    private fun refresh() {
         currentDbId?.let { dbId ->
             currentTable?.let { table ->
                 currentRequestId = UUID.randomUUID().toString()
@@ -342,6 +349,79 @@ class MoorInspectorTableView(
         }
     }
 
+    private fun createMatch(
+        data: TableRow,
+        table: MoorInspectorTable,
+        variables: MutableList<MoorInspectorVariable>
+    ): String {
+        val primaryKeys = table.primaryKey
+        return buildString {
+            if (primaryKeys != null) {
+                append("WHERE ")
+                primaryKeys.forEachIndexed { index, column ->
+                    if (index > 0)
+                        append(" AND ")
+                    val keyData = data.data[column]
+                    append(column)
+                    append(" ")
+                    append(equalsForKey(keyData, table, column, variables))
+                }
+            } else if (!table.withoutRowId && data.data.entries.any {
+                    it.key.equals(
+                        "rowid",
+                        ignoreCase = true
+                    )
+                }) {
+                append(
+                    "WHERE rowid = ${
+                        data.data.entries.find {
+                            it.key.equals(
+                                "rowid",
+                                ignoreCase = true
+                            )
+                        }?.value
+                    }"
+                )
+            } else {
+                append("WHERE ")
+                data.data.entries.forEachIndexed { index, (column, data) ->
+                    if (index > 0)
+                        append(" AND ")
+                    append(column)
+                    append(" ")
+                    append(equalsForKey(data, table, column, variables))
+                }
+            }
+        }
+    }
+
+    private fun getAffectedTables(query: String, updateActive: Boolean): List<String>? {
+        try {
+            when (val statement = CCJSqlParserManager().parse(StringReader(query))) {
+                is Select -> {
+                    if (updateActive) currentConfirmedSelectStatement = query.trim()
+                    return emptyList()
+                }
+                is Update -> {
+                    return listOf(statement.table.name)
+                }
+                is Delete -> {
+                    return listOf(statement.table.name)
+                }
+                is Insert -> {
+                    return listOf(statement.table.name)
+                }
+                else -> {
+                    return emptyList()
+                }
+            }
+        } catch (e: Throwable) {
+            NotificationUtil.error("Invalid sql", "Failed to parse sql statement: ${e.message}", project)
+            return null
+        }
+    }
+
+
 }
 
 data class TableRow(val data: Map<String, Any?>)
@@ -376,6 +456,14 @@ interface MoorInspectorTableQueryHelper {
         variables: List<MoorInspectorVariable>
     )
 
+    fun bulkUpdate(requestId: String, databaseId: String, data: List<BulkActionData>)
+
 }
 
 data class MoorInspectorVariable(val type: String, val data: Any?)
+
+data class BulkActionData(
+    val query: String,
+    val affectedTables: List<String>,
+    val variables: List<MoorInspectorVariable>
+)

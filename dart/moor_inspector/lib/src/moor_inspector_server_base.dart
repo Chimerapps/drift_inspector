@@ -17,16 +17,18 @@ abstract class ConnectionListener {
     String databaseId,
     String requestId,
     String query,
-    List<InspectorVariable> variables,
-  );
+    List<InspectorVariable> variables, {
+    bool sendResponse = true,
+  });
 
   Future<List<int>> update(
     String databaseId,
     String requestId,
     String query,
     List<String> affectedTables,
-    List<InspectorVariable> variables,
-  );
+    List<InspectorVariable> variables, {
+    bool sendResponse = true,
+  });
 }
 
 abstract class MooreInspectorConnection {

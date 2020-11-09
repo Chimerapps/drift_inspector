@@ -12,3 +12,11 @@ fun ensureMain(toExecute: () -> Unit) {
     else
         dispatchMain(toExecute)
 }
+
+inline fun <T> IntArray.mapNotNull(block: (Int) -> T?): List<T> {
+    val result = mutableListOf<T>()
+    forEach {
+        block(it)?.let { calculationResult -> result += calculationResult }
+    }
+    return result
+}

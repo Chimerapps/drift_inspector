@@ -65,6 +65,10 @@ class ListUpdateHelper<T>(
         }
     }
 
+    fun dataAtRow(index: Int): T? {
+        return internalListData[index]
+    }
+
 }
 
 class TableModelDiffUtilDispatcher(private val model: AbstractTableModel) : ListUpdateCallback {

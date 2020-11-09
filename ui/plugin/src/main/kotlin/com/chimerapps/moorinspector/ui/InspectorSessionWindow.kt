@@ -182,12 +182,26 @@ class InspectorSessionWindow(
         NotificationUtil.error("Request failed", "Failed to execute request: $message", project)
     }
 
+    override fun onBulkUpdateResult(requestId: String) {
+        tableView.onUpdateComplete(requestId)
+    }
+
     override fun query(requestId: String, databaseId: String, query: String) {
         client?.query(requestId, databaseId, query)
     }
 
-    override fun updateItem(requestId: String, databaseId: String, query: String, affectedTables: List<String>, variables: List<MoorInspectorVariable>) {
+    override fun updateItem(
+        requestId: String,
+        databaseId: String,
+        query: String,
+        affectedTables: List<String>,
+        variables: List<MoorInspectorVariable>
+    ) {
         client?.update(requestId, databaseId, query, affectedTables, variables)
+    }
+
+    override fun bulkUpdate(requestId: String, databaseId: String, data: List<BulkActionData>) {
+        client?.bulkUpdate(requestId, databaseId, data)
     }
 }
 
