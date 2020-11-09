@@ -1,30 +1,30 @@
 import 'package:moor/moor.dart';
 import 'package:moor_inspector/src/moor_insepctor_driver.dart';
-import 'package:tuple/tuple.dart';
+import 'package:uuid/uuid.dart';
 
 class MoorInspectorBuilder {
-  final _databases = List<Tuple2<String, GeneratedDatabase>>();
+  final _databases = List<DatabaseHolder>();
   String icon;
   String bundleId;
   int port = 0;
 
   void addDatabase(String name, GeneratedDatabase database) {
-    _databases.add(Tuple2(name, database));
+    _databases.add(DatabaseHolder(name, Uuid().v4().toString(), database));
   }
 
   MoorInspector build() {
-    return MoorInspector(port, bundleId, icon, _databases);
+    return MoorInspector._(port, bundleId, icon, _databases);
   }
 }
 
 class MoorInspector {
   final MooreInspectorDriver _driver;
 
-  MoorInspector(
+  MoorInspector._(
     int port,
     String bundleId,
     String icon,
-    List<Tuple2<String, GeneratedDatabase>> databases,
+    List<DatabaseHolder> databases,
   ) : _driver = MooreInspectorDriver(
           databases,
           bundleId,

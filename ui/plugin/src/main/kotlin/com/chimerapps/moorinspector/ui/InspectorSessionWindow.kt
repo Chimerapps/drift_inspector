@@ -14,12 +14,10 @@ import com.chimerapps.moorinspector.client.protocol.MoorInspectorServerInfo
 import com.chimerapps.moorinspector.ui.actions.ConnectAction
 import com.chimerapps.moorinspector.ui.actions.DisconnectAction
 import com.chimerapps.moorinspector.ui.settings.MoorInspectorSettings
+import com.chimerapps.moorinspector.ui.util.NotificationUtil
 import com.chimerapps.moorinspector.ui.util.ensureMain
 import com.chimerapps.moorinspector.ui.util.preferences.AppPreferences
-import com.chimerapps.moorinspector.ui.view.MoorInspectorStatusBar
-import com.chimerapps.moorinspector.ui.view.MoorInspectorTableQueryHelper
-import com.chimerapps.moorinspector.ui.view.MoorInspectorTableView
-import com.chimerapps.moorinspector.ui.view.MoorInspectorTablesView
+import com.chimerapps.moorinspector.ui.view.*
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionToolbar
@@ -179,12 +177,17 @@ class InspectorSessionWindow(
         tableView.onUpdateComplete(requestId)
     }
 
+    override fun onError(requestId: String, message: String) {
+        tableView.onError(requestId)
+        NotificationUtil.error("Request failed", "Failed to execute request: $message", project)
+    }
+
     override fun query(requestId: String, databaseId: String, query: String) {
         client?.query(requestId, databaseId, query)
     }
 
-    override fun updateItem(requestId: String, databaseId: String, query: String, affectedTables: List<String>) {
-        client?.update(requestId, databaseId, query, affectedTables)
+    override fun updateItem(requestId: String, databaseId: String, query: String, affectedTables: List<String>, variables: List<MoorInspectorVariable>) {
+        client?.update(requestId, databaseId, query, affectedTables, variables)
     }
 }
 

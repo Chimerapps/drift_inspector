@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:dart_service_announcement/dart_service_announcement.dart';
 import 'package:moor/moor.dart';
-import 'package:tuple/tuple.dart';
 import 'package:uuid/uuid.dart';
 
 import 'moor_inspector_server_base.dart';
@@ -12,8 +11,15 @@ import 'moore_inspector_empty.dart'
 
 const _ANNOUNCEMENT_PORT = 6395;
 
+const _VARIABLE_TYPE_STRING = 'string';
+const _VARIABLE_TYPE_BOOL = 'bool';
+const _VARIABLE_TYPE_INT = 'int';
+const _VARIABLE_TYPE_REAL = 'real';
+const _VARIABLE_TYPE_BLOB = 'blob';
+const _VARIABLE_TYPE_DATETIME = 'datetime';
+
 class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
-  final _databases = List<Tuple3<String, String, GeneratedDatabase>>();
+  final _databases = List<DatabaseHolder>();
   final MoorInspectorServer _server;
   final String _bundleId;
   final String _icon;
@@ -29,21 +35,17 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
   int get protocolVersion => 1;
 
   MooreInspectorDriver(
-    List<Tuple2<String, GeneratedDatabase>> databases,
+    List<DatabaseHolder> databases,
     this._bundleId,
     this._icon,
     int port,
   ) : _server = createServer(port) {
-    databases.forEach((element) {
-      _databases.add(Tuple3(element.item1, Uuid().v4(), element.item2));
-    });
+    _databases.addAll(databases);
 
-    _serverProtocolData = utf8.encode(
-        json.encode({'type': 'protocol', 'protocolVersion': protocolVersion}));
+    _serverProtocolData = utf8.encode(json.encode({'type': 'protocol', 'protocolVersion': protocolVersion}));
 
     _server.connectionListener = this;
-    _announcementManager =
-        ServerAnnouncementManager(_bundleId, _ANNOUNCEMENT_PORT, this);
+    _announcementManager = ServerAnnouncementManager(_bundleId, _ANNOUNCEMENT_PORT, this);
     if (_icon != null) {
       _announcementManager.addExtension(IconExtension(_icon));
     }
@@ -64,15 +66,11 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
 
   @override
   void onNewConnection(MooreInspectorConnection connection) {
-    connection
-      ..sendMessageUTF8(_serverProtocolData)
-      ..sendMessageUTF8(_serverIdData);
+    connection..sendMessageUTF8(_serverProtocolData)..sendMessageUTF8(_serverIdData);
   }
 
   void _buildServerIdData() {
-    final tableModels = _databases
-        .map((tuple) => _buildTableModel(tuple.item1, tuple.item2, tuple.item3))
-        .toList();
+    final tableModels = _databases.map((tuple) => _buildTableModel(tuple.name, tuple.id, tuple.database)).toList();
 
     final jsonObject = Map<String, dynamic>();
     jsonObject['databases'] = tableModels;
@@ -87,8 +85,7 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
     _serverIdData = utf8.encode(json.encode(wrapper));
   }
 
-  Map<String, dynamic> _buildTableModel(
-      String name, String id, GeneratedDatabase db) {
+  Map<String, dynamic> _buildTableModel(String name, String id, GeneratedDatabase db) {
     final root = Map<String, dynamic>();
     root['name'] = name;
     root['id'] = id;
@@ -101,8 +98,7 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
       final table = Map<String, dynamic>();
       table['sqlName'] = tableInfo.actualTableName;
       table['withoutRowId'] = tableInfo.withoutRowId;
-      table['primaryKey'] =
-          tableInfo.$primaryKey?.map((column) => column.$name)?.toList();
+      table['primaryKey'] = tableInfo.$primaryKey?.map((column) => column.$name)?.toList();
 
       table['columns'] = tableInfo.$columns.map((column) {
         final columnData = Map<String, dynamic>();
@@ -122,14 +118,15 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
 
   @override
   Future<List<int>> filterTable(
-      String databaseId, String requestId, String query) async {
-    final db = _databases
-        .firstWhere((element) => element.item2 == databaseId,
-            orElse: () => null)
-        ?.item3;
-    if (db == null) return Future.error(Exception('Database not found'));
+    String databaseId,
+    String requestId,
+    String query,
+    List<InspectorVariable> variables,
+  ) async {
+    final db = _databases.firstWhere((element) => element.id == databaseId, orElse: () => null)?.database;
+    if (db == null) return Future.error(const NoSuchDatabaseException());
 
-    final select = db.customSelect(query);
+    final select = db.customSelect(query, variables: variables.map(_mapVariable).toList());
     final data = await select.get();
 
     final jsonData = Map<String, dynamic>();
@@ -154,22 +151,21 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
   }
 
   @override
-  Future<List<int>> update(String databaseId, String requestId, String query,
-      List<String> affectedTables) async {
-    _databases.forEach((element) => print('Got db: ${element.item2}'));
-    final db = _databases
-        .firstWhere((element) => element.item2 == databaseId,
-            orElse: () => null)
-        ?.item3;
-    if (db == null) return Future.error(Exception('Database not found'));
+  Future<List<int>> update(
+    String databaseId,
+    String requestId,
+    String query,
+    List<String> affectedTables,
+    List<InspectorVariable> variables,
+  ) async {
+    final db = _databases.firstWhere((element) => element.id == databaseId, orElse: () => null)?.database;
+    if (db == null) return Future.error(const NoSuchDatabaseException());
 
     final numUpdated = await db.customUpdate(
       query,
-      updates: db.allTables
-          .where((element) => affectedTables.contains(element.actualTableName))
-          .toSet(),
+      updates: db.allTables.where((element) => affectedTables.contains(element.actualTableName)).toSet(),
+      variables: variables.map(_mapVariable).toList(),
     );
-    print('Num columns updated: $numUpdated');
 
     final jsonData = Map<String, dynamic>();
     jsonData['databaseId'] = databaseId;
@@ -182,4 +178,49 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
 
     return utf8.encode(json.encode(wrapper));
   }
+
+  Variable<dynamic> _mapVariable(InspectorVariable e) {
+    if (e.data == null) {
+      return const Variable(null);
+    }
+    switch (e.type) {
+      case _VARIABLE_TYPE_STRING:
+        return Variable.withString(e.data as String);
+      case _VARIABLE_TYPE_BOOL:
+        return Variable.withBool(e.data as bool);
+      case _VARIABLE_TYPE_INT:
+        return Variable.withInt(e.data as int);
+      case _VARIABLE_TYPE_REAL:
+        return Variable.withReal(e.data as double);
+      case _VARIABLE_TYPE_BLOB:
+        return Variable.withBlob(Uint8List.fromList(e.data as List<int>));
+      case _VARIABLE_TYPE_DATETIME:
+        return Variable.withDateTime(DateTime.fromMicrosecondsSinceEpoch(e.data as int, isUtc: true));
+    }
+    throw MoorInspectorException('Could not map variable type: ${e.type}, no mapping known');
+  }
+}
+
+class DatabaseHolder {
+  final String name;
+  final String id;
+  final GeneratedDatabase database;
+
+  DatabaseHolder(this.name, this.id, this.database);
+}
+
+class NoSuchDatabaseException implements Exception {
+  const NoSuchDatabaseException();
+
+  @override
+  String toString() => 'No database with given id found';
+}
+
+class MoorInspectorException implements Exception {
+  final String message;
+
+  MoorInspectorException(this.message);
+
+  @override
+  String toString() => message;
 }

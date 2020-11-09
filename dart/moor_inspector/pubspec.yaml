@@ -9,7 +9,6 @@ environment:
 dependencies:
   dart_service_announcement: ^0.2.1
   moor: ^3.4.0
-  tuple: ^1.0.3
   meta: ^1.1.8
   synchronized: ^2.1.0
   uuid: ^2.0.1

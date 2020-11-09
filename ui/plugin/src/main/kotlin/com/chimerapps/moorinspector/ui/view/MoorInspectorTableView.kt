@@ -5,8 +5,8 @@ import com.chimerapps.moorinspector.client.protocol.MoorInspectorTable
 import com.chimerapps.moorinspector.ui.actions.RefreshAction
 import com.chimerapps.moorinspector.ui.util.NotificationUtil
 import com.chimerapps.moorinspector.ui.util.ensureMain
+import com.chimerapps.moorinspector.ui.util.list.DiffUtilComparator
 import com.chimerapps.moorinspector.ui.util.list.ListUpdateHelper
-import com.chimerapps.moorinspector.ui.util.sql.SqlUtil
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.actionSystem.DefaultActionGroup
@@ -25,6 +25,8 @@ import net.sf.jsqlparser.statement.select.Select
 import net.sf.jsqlparser.statement.update.Update
 import java.awt.BorderLayout
 import java.io.StringReader
+import java.time.Instant
+import java.time.format.DateTimeFormatter
 import java.util.*
 import javax.swing.JPanel
 import javax.swing.ListSelectionModel
@@ -102,22 +104,22 @@ class MoorInspectorTableView(
                 is Update -> {
                     currentRequestId = UUID.randomUUID().toString()
                     markRefreshing()
-                    helper.updateItem(currentRequestId!!, dbId, rawQuery, listOf(statement.table.name))
+                    helper.updateItem(currentRequestId!!, dbId, rawQuery, listOf(statement.table.name), emptyList())
                 }
                 is Delete -> {
                     currentRequestId = UUID.randomUUID().toString()
                     markRefreshing()
-                    helper.updateItem(currentRequestId!!, dbId, rawQuery, listOf(statement.table.name))
+                    helper.updateItem(currentRequestId!!, dbId, rawQuery, listOf(statement.table.name), emptyList())
                 }
                 is Insert -> {
                     currentRequestId = UUID.randomUUID().toString()
                     markRefreshing()
-                    helper.updateItem(currentRequestId!!, dbId, rawQuery, listOf(statement.table.name))
+                    helper.updateItem(currentRequestId!!, dbId, rawQuery, listOf(statement.table.name), emptyList())
                 }
                 else -> {
                     currentRequestId = UUID.randomUUID().toString()
                     markRefreshing()
-                    helper.updateItem(currentRequestId!!, dbId, rawQuery, listOf())
+                    helper.updateItem(currentRequestId!!, dbId, rawQuery, listOf(), emptyList())
                 }
             }
             this.rawQuery.addCurrentTextToHistory()
@@ -140,11 +142,7 @@ class MoorInspectorTableView(
             0
         )
 
-        listUpdateHelper = ListUpdateHelper(model) { o1, o2 ->
-            val o1data = o1.data
-            val o2data = o2.data
-            if (o1data == o2data) 0 else -1
-        }
+        listUpdateHelper = ListUpdateHelper(model, TableRowComparator(table))
 
         this.table.setModelAndUpdateColumns(model)
         this.table.updateColumnSizes()
@@ -152,20 +150,21 @@ class MoorInspectorTableView(
         refresh()
     }
 
-    private fun buildUpdateQuery(
+    private fun sendUpdateQuery(
         table: MoorInspectorTable,
         column: MoorInspectorColumn,
         data: TableRow,
         newValue: String?
     ) {
+        val variables = mutableListOf<MoorInspectorVariable>()
         val query = buildString {
             append("UPDATE ${table.sqlName} SET ")
 
             val name = column.name
             append(name)
-            append(" = ")
-            append(assignmentForKey(newValue, table, name))
-            append(" ")
+            append("=? ")
+
+            variables += makeVariable(column, newValue)
 
             val primaryKeys = table.primaryKey
             if (primaryKeys != null) {
@@ -176,46 +175,67 @@ class MoorInspectorTableView(
                     val keyData = data.data[column]
                     append(column)
                     append(" ")
-                    append(equalsForKey(keyData, table, column))
+                    append(equalsForKey(keyData, table, column, variables))
                 }
-            } else if (!table.withoutRowId && data.data["rowid"] != null) {
-                append("WHERE rowid = ${data.data["rowid"]}")
+            } else if (!table.withoutRowId && data.data.entries.any { it.key.equals("rowid", ignoreCase = true) }) {
+                append("WHERE rowid = ${data.data.entries.find { it.key.equals("rowid", ignoreCase = true) }?.value}")
             }
         }
 
         currentDbId?.let { databaseId ->
             currentRequestId = UUID.randomUUID().toString()
             refreshAction.refreshing = true
-            helper.updateItem(currentRequestId!!, databaseId, query, listOf(table.sqlName))
+            helper.updateItem(currentRequestId!!, databaseId, query, listOf(table.sqlName), variables)
         }
     }
 
-    private fun assignmentForKey(keyData: String?, table: MoorInspectorTable, column: String): String {
-        if (keyData == null || keyData.isEmpty()) return "NULL"
-
-        val type = table.columns.find { it.name == column }?.type
-            ?: throw IllegalStateException("Could create statement for column, column not found")
-
-        when (type.toLowerCase(Locale.getDefault())) {
-            "bit", "tinyint", "smallint", "int", "bigint", "decimal", "numeric", "float", "real", "integer" -> return "$keyData"
-            "char", "varchar", "text", "nchar", "nvarchar", "ntext" -> return "'${SqlUtil.escape(keyData.toString())}'"
-            "date", "time", "datetime", "timestamp", "year" -> return "$keyData"
+    private fun makeVariable(
+        column: MoorInspectorColumn,
+        newValue: String?,
+        rawValue: Any? = null
+    ): MoorInspectorVariable {
+        if (newValue == null && rawValue == null) {
+            return MoorInspectorVariable("int", newValue)
         }
-        throw IllegalStateException("Don't know how to match type: $type")
+        @Suppress("UNCHECKED_CAST")
+        when (column.type.toLowerCase(Locale.getDefault())) {
+            "bit", "tinyint", "smallint", "int", "bigint", "integer" -> return MoorInspectorVariable(
+                "int",
+                (rawValue as? Number)?.toLong() ?: newValue?.toLong()
+            )
+            "float", "real", "double" -> return MoorInspectorVariable(
+                "real",
+                (rawValue as? Number)?.toDouble() ?: newValue?.toDouble()
+            )
+            "char", "varchar", "text", "nchar", "nvarchar", "ntext" -> return MoorInspectorVariable(
+                "string",
+                rawValue ?: newValue
+            )
+            "date", "time", "datetime", "timestamp", "year" -> return MoorInspectorVariable(
+                "datetime",
+                (rawValue as? Number)?.toLong() ?: (rawValue as? Date)?.time ?: newValue?.toLongOrNull()
+                ?: (DateTimeFormatter.ISO_INSTANT.parse(newValue) as? Instant)?.toEpochMilli()
+            )
+            "blob" -> return MoorInspectorVariable(
+                "blob",
+                (rawValue as? List<Int>) ?: newValue?.split(',')?.map { it.trim().toInt() })
+        }
+        throw IllegalStateException("Could create statement for column, type not supported: ${column.type}")
     }
 
-    private fun equalsForKey(keyData: Any?, table: MoorInspectorTable, column: String): String {
+    private fun equalsForKey(
+        keyData: Any?,
+        table: MoorInspectorTable,
+        column: String,
+        variables: MutableList<MoorInspectorVariable>
+    ): String {
         if (keyData == null) return "IS NULL"
-        val type = table.columns.find { it.name == column }?.type
+        val tableColumn = table.columns.find { it.name == column }
             ?: throw IllegalStateException("Could create statement for column, column not found")
 
+        variables += makeVariable(tableColumn, newValue = null, rawValue = keyData)
 
-        when (type.toLowerCase(Locale.getDefault())) {
-            "bit", "tinyint", "smallint", "int", "bigint", "decimal", "numeric", "float", "real", "integer" -> return "= $keyData"
-            "char", "varchar", "text", "nchar", "nvarchar", "ntext" -> return "= '${SqlUtil.escape(keyData.toString())}'"
-            "date", "time", "datetime", "timestamp", "year" -> return "= $keyData"
-        }
-        throw IllegalStateException("Don't know how to match type: $type")
+        return "=?"
     }
 
     fun refresh() {
@@ -255,18 +275,70 @@ class MoorInspectorTableView(
         toolbar.updateActionsImmediately()
     }
 
+    fun onError(requestId: String) {
+        ensureMain {
+            if (currentRequestId != requestId) return@ensureMain
+            refreshAction.refreshing = false
+            toolbar.updateActionsImmediately()
+        }
+    }
+
     private inner class TableViewColumnInfo(val column: MoorInspectorColumn, private val table: MoorInspectorTable) :
         ColumnInfo<TableRow, String>(column.name) {
 
-        override fun valueOf(item: TableRow?): String? = item?.data?.get(column.name)?.toString()
+        override fun valueOf(item: TableRow?): String? {
+            val raw = item?.data?.get(column.name) ?: return null
+            @Suppress("UNCHECKED_CAST")
+            when (column.type.toLowerCase(Locale.getDefault())) {
+                "bit", "tinyint", "smallint", "int", "bigint", "integer" -> return (raw as Number).toLong().toString()
+                "float", "real", "double" -> return (raw as Number).toDouble().toString()
+                "char", "varchar", "text", "nchar", "nvarchar", "ntext" -> return raw.toString()
+                "date", "time", "datetime", "timestamp", "year" -> return DateTimeFormatter.ISO_INSTANT.format(
+                    Instant.ofEpochMilli(
+                        (raw as Number).toLong()
+                    )
+                )
+                "blob" -> return (raw as List<Int>).joinToString()
+            }
+            return raw.toString()
+        }
 
         override fun isCellEditable(item: TableRow): Boolean {
             return column.name.toLowerCase(Locale.getDefault()) != "rowid"
         }
 
         override fun setValue(item: TableRow, value: String?) {
-            if (item.data[column.name]?.toString() != value)
-                buildUpdateQuery(table, column, item, value)
+            try {
+                if (!isSame(item.data[column.name], value)) {
+                    sendUpdateQuery(table, column, item, value)
+                }
+            } catch (e: Throwable) {
+                NotificationUtil.error("Update failed", "Failed to update: ${e.message}", project)
+            }
+        }
+
+        private fun isSame(original: Any?, value: String?): Boolean {
+            if (original == null && value == null) return true
+            else if (original != null && value == null) return false
+            else if (original == null && value != null) return false
+
+            @Suppress("UNCHECKED_CAST")
+            when (column.type.toLowerCase(Locale.getDefault())) {
+                "bit", "tinyint", "smallint", "int", "bigint", "integer" -> return (original as? Number)?.toLong() == value?.toLong()
+                "float", "real", "double" -> return (original as? Number)?.toDouble() == value?.toDouble()
+                "char", "varchar", "text", "nchar", "nvarchar", "ntext" -> return original == value
+                "date", "time", "datetime", "timestamp", "year" -> {
+                    val newInstant = if (value != null) {
+                        value.toLongOrNull()
+                            ?: (DateTimeFormatter.ISO_INSTANT.parse(value) as? Instant)?.toEpochMilli()
+                    } else null
+                    val old = (original as? Number)?.toLong()
+
+                    return newInstant == old
+                }
+                "blob" -> return (original as? List<Int>) == value?.split(',')?.map { it.trim().toInt() }
+            }
+            throw IllegalStateException("Could create statement for column, type not supported: ${column.type}")
         }
     }
 
@@ -274,10 +346,36 @@ class MoorInspectorTableView(
 
 data class TableRow(val data: Map<String, Any?>)
 
+private class TableRowComparator(table: MoorInspectorTable) : DiffUtilComparator<TableRow> {
+
+    private val primaryKeys = table.primaryKey
+
+    override fun representSameItem(left: TableRow, right: TableRow): Boolean {
+        if (primaryKeys == null || primaryKeys.isEmpty()) {
+            val leftRowId = left.data.entries.find { it.key.equals("rowid", ignoreCase = true) }?.value
+            val rightRowId = right.data.entries.find { it.key.equals("rowid", ignoreCase = true) }?.value
+            if (leftRowId != null && rightRowId != null)
+                return leftRowId == rightRowId
+            return false //No rowId for one or the other -> bail
+        }
+
+        return left.data.filter { it.key in primaryKeys } == right.data.filter { it.key in primaryKeys }
+    }
+
+}
+
 interface MoorInspectorTableQueryHelper {
 
     fun query(requestId: String, databaseId: String, query: String)
 
-    fun updateItem(requestId: String, databaseId: String, query: String, affectedTables: List<String>)
+    fun updateItem(
+        requestId: String,
+        databaseId: String,
+        query: String,
+        affectedTables: List<String>,
+        variables: List<MoorInspectorVariable>
+    )
 
 }
+
+data class MoorInspectorVariable(val type: String, val data: Any?)

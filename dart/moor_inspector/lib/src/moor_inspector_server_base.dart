@@ -14,14 +14,30 @@ abstract class ConnectionListener {
   void onNewConnection(MooreInspectorConnection connection);
 
   Future<List<int>> filterTable(
-      String databaseId, String requestId, String query);
+    String databaseId,
+    String requestId,
+    String query,
+    List<InspectorVariable> variables,
+  );
 
-  Future<List<int>> update(String databaseId, String requestId, String query,
-      List<String> affectedTables);
+  Future<List<int>> update(
+    String databaseId,
+    String requestId,
+    String query,
+    List<String> affectedTables,
+    List<InspectorVariable> variables,
+  );
 }
 
 abstract class MooreInspectorConnection {
   void sendMessageUTF8(List<int> data);
 
   void close();
+}
+
+class InspectorVariable {
+  final String type;
+  final dynamic data;
+
+  InspectorVariable(this.type, this.data);
 }

@@ -1,13 +1,13 @@
 package com.chimerapps.moorinspector.ui.util.list
 
 import com.chimerapps.moorinspector.ui.util.dispatchMain
-import com.intellij.util.ui.TableViewModel
+import com.intellij.util.ui.ListTableModel
 import javax.swing.table.AbstractTableModel
 import kotlin.concurrent.thread
 
 class ListUpdateHelper<T>(
-    private val model: TableViewModel<T>,
-    private val compare: Comparator<T> = Comparator { o1, o2 -> if (o1 == o2) 0 else -1 }
+    private val model: ListTableModel<T>,
+    private val comparator: DiffUtilComparator<T>
 ) {
 
     private var hasInit = false
@@ -16,7 +16,6 @@ class ListUpdateHelper<T>(
 
     fun onListUpdated(
         newListData: List<T>,
-        comparator: Comparator<T> = compare,
     ) {
         if (!hasInit) {
             hasInit = true
@@ -37,12 +36,18 @@ class ListUpdateHelper<T>(
 
                     override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
                         if (Thread.interrupted()) throw InterruptedException()
-                        return comparator.compare(internalListData[oldItemPosition], newListData[newItemPosition]) == 0
+                        return comparator.representSameItem(
+                            internalListData[oldItemPosition],
+                            newListData[newItemPosition]
+                        )
                     }
 
                     override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
                         if (Thread.interrupted()) throw InterruptedException()
-                        return comparator.compare(internalListData[oldItemPosition], newListData[newItemPosition]) == 0
+                        return comparator.areItemContentsEqual(
+                            internalListData[oldItemPosition],
+                            newListData[newItemPosition]
+                        )
                     }
                 })
                 val t = Thread.currentThread()
@@ -79,4 +84,9 @@ class TableModelDiffUtilDispatcher(private val model: AbstractTableModel) : List
     override fun onChanged(position: Int, count: Int, payload: Any?) {
         model.fireTableRowsUpdated(position, position + count)
     }
+}
+
+interface DiffUtilComparator<T> {
+    fun representSameItem(left: T, right: T): Boolean
+    fun areItemContentsEqual(left: T, right: T): Boolean = left == right
 }

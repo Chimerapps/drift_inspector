@@ -5,6 +5,8 @@ import com.chimerapps.discovery.utils.logger
 import com.chimerapps.moorinspector.client.protocol.MoorInspectorProtocol
 import com.chimerapps.moorinspector.client.protocol.MoorInspectorServerInfo
 import com.chimerapps.moorinspector.client.protocol.MoorInspectorV1ProtocolHandler
+import com.chimerapps.moorinspector.ui.view.MoorInspectorVariable
+import com.google.gsonpackaged.Gson
 import com.google.gsonpackaged.JsonArray
 import com.google.gsonpackaged.JsonObject
 import com.google.gsonpackaged.JsonParser
@@ -72,11 +74,22 @@ class MoorInspectorClient(serverURI: URI) : MoorInspectorMessageListener, Closea
         clientListeners.forEach { it.onUpdateResult(tableId, requestId, numRowsUpdated) }
     }
 
+    override fun onError(requestId: String, message: String) {
+        clientListeners.forEach { it.onError(requestId, message) }
+    }
+
     fun query(requestId: String, databaseId: String, query: String) {
         socketClient.sendString("{\"type\":\"filter\", \"body\": {\"databaseId\":\"$databaseId\",\"requestId\":\"$requestId\",\"query\":\"$query\"}}")
     }
 
-    fun update(requestId: String, databaseId: String, query: String, affectedTables: List<String>) {
+    fun update(
+        requestId: String,
+        databaseId: String,
+        query: String,
+        affectedTables: List<String>,
+        variables: List<MoorInspectorVariable>
+    ) {
+        val gson = Gson()
         val json = JsonObject()
         json.addProperty("type", "update")
         json.add("body", JsonObject().also { body ->
@@ -86,6 +99,7 @@ class MoorInspectorClient(serverURI: URI) : MoorInspectorMessageListener, Closea
             body.add("affectedTables", JsonArray().also { array ->
                 affectedTables.forEach { array.add(it) }
             })
+            body.add("variables", gson.toJsonTree(variables))
         })
         socketClient.sendString(json.toString())
     }
@@ -102,6 +116,8 @@ interface MoorInspectorMessageListener {
     fun onUpdateResult(tableId: String, requestId: String, numRowsUpdated: Int) {}
 
     fun onServerInfo(serverInfo: MoorInspectorServerInfo) {}
+
+    fun onError(requestId: String, message: String) {}
 
     fun onReady() {}
 }

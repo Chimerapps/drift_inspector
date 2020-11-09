@@ -46,6 +46,7 @@ class MoorInspectorV1ProtocolHandler(private val messageListener: MoorInspectorM
         const val MESSAGE_TYPE_FILTER_RESULT = "filterResult"
         const val MESSAGE_TYPE_SERVER_INFO = "serverInfo"
         const val MESSAGE_TYPE_UPDATE_RESULT = "updateResult"
+        const val MESSAGE_TYPE_ERROR = "error"
     }
 
     private val gson = Gson()
@@ -57,6 +58,7 @@ class MoorInspectorV1ProtocolHandler(private val messageListener: MoorInspectorM
             MESSAGE_TYPE_FILTER_RESULT -> onFilterResult(message.get("body"))
             MESSAGE_TYPE_SERVER_INFO -> onServerInfo(message.get("body"))
             MESSAGE_TYPE_UPDATE_RESULT -> onUpdateResult(message.get("body"))
+            MESSAGE_TYPE_ERROR -> onError(message.get("body"))
         }
     }
 
@@ -87,10 +89,18 @@ class MoorInspectorV1ProtocolHandler(private val messageListener: MoorInspectorM
         messageListener.onUpdateResult(tableId, requestId, numUpdated)
     }
 
-
     private fun onServerInfo(body: JsonElement) {
         val info = gson.fromJson(body, MoorInspectorServerInfo::class.java)
         messageListener.onServerInfo(info)
+    }
+
+    private fun onError(body: JsonElement) {
+        val bodyObject = body.asJsonObject
+
+        val requestId = bodyObject.get("requestId").asString
+        val message = bodyObject.get("message").asString
+
+        messageListener.onError(requestId, message)
     }
 
 }

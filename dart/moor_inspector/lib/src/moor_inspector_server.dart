@@ -99,8 +99,9 @@ class _MooreInspectorConnectionImpl extends MooreInspectorConnection {
     final id = parsedJson['databaseId'] as String;
     final requestId = parsedJson['requestId'] as String;
     final query = parsedJson['query'] as String;
+    final variables = parsedJson.containsKey('variables') ? (parsedJson['variables'] as List).map(_mapVariable).toList() : List<InspectorVariable>.empty();
 
-    sendMessageUTF8(await _listener.filterTable(id, requestId, query));
+    await _sendOrError(requestId, _listener.filterTable(id, requestId, query, variables));
   }
 
   Future<void> _handleUpdateRequest(Map<String, dynamic> parsedJson) async {
@@ -108,8 +109,30 @@ class _MooreInspectorConnectionImpl extends MooreInspectorConnection {
     final query = parsedJson['query'] as String;
     final requestId = parsedJson['requestId'] as String;
     final affectedTables = (parsedJson['affectedTables'] as List<dynamic>).map((it) => it.toString()).toList();
+    final variables = parsedJson.containsKey('variables') ? (parsedJson['variables'] as List).map(_mapVariable).toList() : List<InspectorVariable>.empty();
 
-    print('Executing: $query which affects $affectedTables on $id');
-    sendMessageUTF8(await _listener.update(id, requestId, query, affectedTables));
+    await _sendOrError(requestId, _listener.update(id, requestId, query, affectedTables, variables));
+  }
+
+  Future<void> _sendOrError(String requestId, Future<List<int>> dataProvider) async {
+    try {
+      final data = await dataProvider;
+      sendMessageUTF8(data);
+    } on Exception catch (e) {
+      final wrapper = {
+        'type': 'error',
+        'body': {
+          'requestId': requestId,
+          'message': e.toString(),
+        }
+      };
+      sendMessageUTF8(utf8.encode(json.encode(wrapper)));
+    }
+  }
+
+  InspectorVariable _mapVariable(data) {
+    final json = data as Map<String, dynamic>;
+
+    return InspectorVariable(json['type'] as String, json['data']);
   }
 }
