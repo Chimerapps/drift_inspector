@@ -1,7 +1,7 @@
 name: moor_inspector
-description: A starting point for Dart libraries or applications.
-# version: 1.0.0
-# homepage: https://www.example.com
+description: A dart library to enable development time inspection and modification of your moor databases
+version: 0.1.0
+homepage: https://github.com/Chimerapps/moor_inspector
 
 environment:
   sdk: '>=2.9.3 <3.0.0'
