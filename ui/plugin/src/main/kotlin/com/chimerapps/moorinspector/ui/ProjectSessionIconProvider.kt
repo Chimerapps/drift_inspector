@@ -9,13 +9,18 @@ import java.lang.Float.min
 import javax.swing.Icon
 import javax.swing.ImageIcon
 
-class ProjectSessionIconProvider private constructor(private val project: Project,
-                                                     private val delegate: SessionIconProvider) : SessionIconProvider {
+class ProjectSessionIconProvider private constructor(
+    private val project: Project,
+    private val delegate: SessionIconProvider
+) : SessionIconProvider {
 
     companion object {
         private val projectInstances = mutableMapOf<Project, ProjectSessionIconProvider>()
 
-        fun instance(project: Project, delegate: SessionIconProvider = DefaultSessionIconProvider()): ProjectSessionIconProvider {
+        fun instance(
+            project: Project,
+            delegate: SessionIconProvider = DefaultSessionIconProvider()
+        ): ProjectSessionIconProvider {
             return projectInstances.getOrPut(project) { ProjectSessionIconProvider(project, delegate) }
         }
     }
@@ -38,7 +43,7 @@ class ProjectSessionIconProvider private constructor(private val project: Projec
 
     private fun loadFromProject(iconString: String): Icon? {
         val dir = project.guessProjectDir() ?: return null
-        val matches = dir.findChild(".idea")?.findChild("niddler")?.children?.filter { file ->
+        val matches = dir.findChild(".idea")?.findChild("moor_inspector")?.children?.filter { file ->
             !file.isDirectory && (file.nameWithoutExtension == iconString || file.nameWithoutExtension == "$iconString@2x") && file.extension != "svg"
         } ?: return null
         if (matches.isEmpty()) return null

@@ -18,7 +18,6 @@ import com.chimerapps.moorinspector.ui.util.NotificationUtil
 import com.chimerapps.moorinspector.ui.util.ensureMain
 import com.chimerapps.moorinspector.ui.util.preferences.AppPreferences
 import com.chimerapps.moorinspector.ui.view.*
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.actionSystem.DefaultActionGroup
@@ -33,12 +32,11 @@ import javax.swing.SwingUtilities
 
 class InspectorSessionWindow(
     private val project: Project,
-    disposable: Disposable,
     private val toolWindow: InspectorToolWindow
 ) : JPanel(BorderLayout()), MoorInspectorTableQueryHelper, MoorInspectorMessageListener {
 
     companion object {
-        private const val DEFAULT_IDEVICE_PATH = "/usr/local/bin"
+        const val DEFAULT_IDEVICE_PATH = "/usr/local/bin"
         private const val APP_PREFERENCE_SPLITTER_STATE = "${AppPreferences.PREFIX}detailSplitter"
     }
 
@@ -202,6 +200,10 @@ class InspectorSessionWindow(
 
     override fun bulkUpdate(requestId: String, databaseId: String, data: List<BulkActionData>) {
         client?.bulkUpdate(requestId, databaseId, data)
+    }
+
+    fun onWindowClosed() {
+        disconnect()
     }
 }
 

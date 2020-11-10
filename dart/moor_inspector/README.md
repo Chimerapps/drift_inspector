@@ -2,7 +2,9 @@ Moor inspector dart library
 
 Helper library for moor databases, enables the moor inspector intellij plugin to inspect and edit your moor databases during development
 
-Requires the moor inspector plugin from the intellij marketplace to work
+Requires the moor inspector plugin from the intellij marketplace to work.
+
+Download plugin [here](https://plugins.jetbrains.com/plugin/15364-moor-inspector)
  
 ## Usage
 

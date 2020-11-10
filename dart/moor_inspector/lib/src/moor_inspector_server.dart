@@ -38,7 +38,7 @@ class _MooreInspectorServerImpl extends MoorInspectorServer {
 
   void _onNewConnection(WebSocket socket) {
     final connection =
-        _MooreInspectorConnectionImpl(socket, this, connectionListener);
+        _MooreInspectorConnectionImpl(socket, connectionListener);
     _lock.synchronized(() async {
       _connections.add(connection);
       socket.listen(
@@ -65,10 +65,9 @@ class _MooreInspectorConnectionImpl extends MooreInspectorConnection {
   static const _MESSAGE_BATCH = 'batch';
 
   final WebSocket _socket;
-  final MoorInspectorServer _server;
   final ConnectionListener _listener;
 
-  _MooreInspectorConnectionImpl(this._socket, this._server, this._listener);
+  _MooreInspectorConnectionImpl(this._socket, this._listener);
 
   void onConnectionReady() {
     _listener.onNewConnection(this);

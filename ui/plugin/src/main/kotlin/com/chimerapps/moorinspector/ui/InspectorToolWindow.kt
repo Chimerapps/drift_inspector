@@ -71,7 +71,7 @@ class InspectorToolWindow(private val project: Project, private val disposable: 
             }
 
             override fun contentRemoved(event: ContentManagerEvent) {
-                //TODO (event.content.component as NiddlerSessionWindow).onWindowClosed()
+                (event.content.component as InspectorSessionWindow).onWindowClosed()
             }
         }, disposable)
 
@@ -123,7 +123,7 @@ class InspectorToolWindow(private val project: Project, private val disposable: 
     }
 
     private fun newSessionWindow(): InspectorSessionWindow {
-        val sessionWindow = InspectorSessionWindow(project, disposable, this)
+        val sessionWindow = InspectorSessionWindow(project, this)
         val content =
             tabsContainer.createContent("${c++}-contentId", sessionWindow, "${Tr.ViewSession.tr()} $c", null, null)
         content.setPreferredFocusedComponent { sessionWindow }
