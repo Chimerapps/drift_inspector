@@ -61,21 +61,19 @@ class MoorInspectorTableView(
         it.addKeyListener(object : KeyAdapter() {
             override fun keyPressed(e: KeyEvent) {
                 super.keyPressed(e)
-                currentDbId?.let { dbId ->
-                    currentTable?.let { currentTable ->
-                        listUpdateHelper?.let { list ->
-                            if (e.keyCode == KeyEvent.VK_DELETE || e.keyCode == KeyEvent.VK_BACK_SPACE) {
-                                val queriesToExecute = it.selectedRows.mapNotNull { row ->
-                                    val data = list.dataAtRow(row) ?: return@mapNotNull null
-                                    val variables = mutableListOf<MoorInspectorVariable>()
-                                    val query = buildString {
-                                        append("DELETE FROM ${currentTable.sqlName} ")
-                                        append(createMatch(data, currentTable, variables))
-                                    }
-                                    query to variables
+                currentTable?.let { currentTable ->
+                    listUpdateHelper?.let { list ->
+                        if (e.keyCode == KeyEvent.VK_DELETE || e.keyCode == KeyEvent.VK_BACK_SPACE) {
+                            val queriesToExecute = it.selectedRows.mapNotNull { row ->
+                                val data = list.dataAtRow(row) ?: return@mapNotNull null
+                                val variables = mutableListOf<MoorInspectorVariable>()
+                                val query = buildString {
+                                    append("DELETE FROM ${currentTable.sqlName} ")
+                                    append(createMatch(data, currentTable, variables))
                                 }
-                                executeBulkQuery(queriesToExecute)
+                                query to variables
                             }
+                            executeBulkQuery(queriesToExecute)
                         }
                     }
                 }
