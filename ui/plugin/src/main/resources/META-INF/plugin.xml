@@ -1,12 +1,18 @@
 <idea-plugin>
     <id>com.chimerapps.moorinspector</id>
     <name>Moor Inspector</name>
-    <version>0.1.0</version>
-    <vendor email="support@chimerapps.com" url="https://github.com/Chimerapps">Chimerapps</vendor>
+    <version>0.1.1</version>
+    <vendor email="support@chimerapps.com" url="https://github.com/Chimerapps">chimerapps</vendor>
 
-    <description>This plugin enables the moor inspector ui inside the IDE</description>
+    <description>This plugin enables the moor inspector ui inside the IDE. Use the moor_inspector dart/flutter library
+        to connect and inspect your databases during development. After running your dart/flutter app, use the connect
+        button to discover and connect your process/device and start inspecting!
+    </description>
 
     <change-notes><![CDATA[
+        <p>
+            <b>0.1.1 - Added icon, updated description</b>
+        </p>
         <p>
             <b>0.1.0 - First, alpha, release. Supports basic querying, updating, deleting, custom queries</b>
         </p>
@@ -26,9 +32,5 @@
         <applicationService
                 serviceImplementation="com.chimerapps.moorinspector.ui.settings.MoorInspectorSettings"/>
     </extensions>
-
-    <actions>
-
-    </actions>
 
 </idea-plugin>
