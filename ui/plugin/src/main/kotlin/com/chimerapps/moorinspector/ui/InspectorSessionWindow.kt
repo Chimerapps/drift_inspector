@@ -48,7 +48,7 @@ class InspectorSessionWindow(
     private var lastConnection: PreparedDeviceConnection? = null
     private val statusBar = MoorInspectorStatusBar()
     private val tablesView = MoorInspectorTablesView() { db, table ->
-        tableView.update(db.id, table)
+        tableView.update(db.id, db.name, table)
     }
     private val tableView = MoorInspectorTableView(this, project)
 
