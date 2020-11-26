@@ -12,8 +12,8 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.project.Project
-import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.SearchTextField
+import com.intellij.ui.ToolbarDecorator
 import com.intellij.ui.table.TableView
 import com.intellij.util.PlatformIcons
 import com.intellij.util.ui.ColumnInfo
@@ -34,6 +34,7 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 import javax.swing.DefaultCellEditor
 import javax.swing.JPanel
+import javax.swing.JTable
 import javax.swing.ListSelectionModel
 import javax.swing.table.JTableHeader
 import javax.swing.table.TableCellEditor
@@ -61,22 +62,10 @@ class MoorInspectorTableView(
         it.addKeyListener(object : KeyAdapter() {
             override fun keyPressed(e: KeyEvent) {
                 super.keyPressed(e)
-                currentTable?.let { currentTable ->
-                    listUpdateHelper?.let { list ->
-                        if (e.keyCode == KeyEvent.VK_DELETE || e.keyCode == KeyEvent.VK_BACK_SPACE) {
-                            val queriesToExecute = it.selectedRows.mapNotNull { row ->
-                                val data = list.dataAtRow(row) ?: return@mapNotNull null
-                                val variables = mutableListOf<MoorInspectorVariable>()
-                                val query = buildString {
-                                    append("DELETE FROM ${currentTable.sqlName} ")
-                                    append(createMatch(data, currentTable, variables))
-                                }
-                                query to variables
-                            }
-                            executeBulkQuery(queriesToExecute)
-                        }
-                    }
+                if (e.keyCode == KeyEvent.VK_DELETE || e.keyCode == KeyEvent.VK_BACK_SPACE) {
+                    doRemoveSelectedRows()
                 }
+
             }
         })
     }
@@ -112,7 +101,14 @@ class MoorInspectorTableView(
         val contentPanel = JPanel(BorderLayout())
         contentPanel.add(rawQuery, BorderLayout.NORTH)
 
-        contentPanel.add(ScrollPaneFactory.createScrollPane(table), BorderLayout.CENTER)
+        val decorator = ToolbarDecorator.createDecorator(table)
+        decorator.disableUpDownActions()
+        decorator.disableAddAction() //TODO re-enable
+        decorator.setRemoveAction { doRemoveSelectedRows() }
+
+        table.autoResizeMode = JTable.AUTO_RESIZE_OFF
+
+        contentPanel.add(decorator.createPanel(), BorderLayout.CENTER)
 
         add(toolbar.component, BorderLayout.WEST)
         add(contentPanel, BorderLayout.CENTER)
@@ -145,7 +141,9 @@ class MoorInspectorTableView(
         currentConfirmedSelectStatement = null
 
         val model = ListTableModel(
-            table.columns.map { TableViewColumnInfo(it, table) }.toTypedArray(),
+            table.columns.map {
+                TableViewColumnInfo(it, table)
+            }.toTypedArray(),
             listOf(TableRow(emptyMap())),
             0
         )
@@ -345,6 +343,10 @@ class MoorInspectorTableView(
             }
             throw IllegalStateException("Could create statement for column, type not supported: ${column.type}")
         }
+
+        override fun getPreferredStringValue(): String? {
+            return column.name
+        }
     }
 
     private fun createMatch(
@@ -419,7 +421,23 @@ class MoorInspectorTableView(
         }
     }
 
+    private fun doRemoveSelectedRows() {
+        currentTable?.let { currentTable ->
+            listUpdateHelper?.let { list ->
 
+                val queriesToExecute = table.selectedRows.mapNotNull { row ->
+                    val data = list.dataAtRow(row) ?: return@mapNotNull null
+                    val variables = mutableListOf<MoorInspectorVariable>()
+                    val query = buildString {
+                        append("DELETE FROM ${currentTable.sqlName} ")
+                        append(createMatch(data, currentTable, variables))
+                    }
+                    query to variables
+                }
+                executeBulkQuery(queriesToExecute)
+            }
+        }
+    }
 }
 
 data class TableRow(val data: Map<String, Any?>)
