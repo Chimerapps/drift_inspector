@@ -29,6 +29,8 @@
                     icon="/moor_inspector_small.png"/>
         <applicationConfigurable instance="com.chimerapps.moorinspector.ui.settings.ApplicationConfigurationProvider"
                                  id="MoorInspectorRoot"/>
+
+        <projectService serviceImplementation="com.chimerapps.moorinspector.ui.settings.MoorProjectSettings"/>
         <applicationService
                 serviceImplementation="com.chimerapps.moorinspector.ui.settings.MoorInspectorSettings"/>
     </extensions>

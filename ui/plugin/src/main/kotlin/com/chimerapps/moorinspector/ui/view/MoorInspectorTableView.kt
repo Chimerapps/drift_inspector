@@ -14,30 +14,18 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.project.Project
 import com.intellij.ui.SearchTextField
 import com.intellij.ui.ToolbarDecorator
-import com.intellij.ui.table.TableView
-import com.intellij.util.PlatformIcons
-import com.intellij.util.ui.ColumnInfo
-import com.intellij.util.ui.JBUI
-import com.intellij.util.ui.ListTableModel
 import net.sf.jsqlparser.parser.CCJSqlParserManager
 import net.sf.jsqlparser.statement.delete.Delete
 import net.sf.jsqlparser.statement.insert.Insert
 import net.sf.jsqlparser.statement.select.Select
 import net.sf.jsqlparser.statement.update.Update
 import java.awt.BorderLayout
-import java.awt.Component
-import java.awt.event.KeyAdapter
-import java.awt.event.KeyEvent
 import java.io.StringReader
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.util.*
-import javax.swing.DefaultCellEditor
 import javax.swing.JPanel
 import javax.swing.JTable
-import javax.swing.ListSelectionModel
-import javax.swing.table.JTableHeader
-import javax.swing.table.TableCellEditor
 
 
 class MoorInspectorTableView(
@@ -45,30 +33,7 @@ class MoorInspectorTableView(
     private val project: Project
 ) : JPanel(BorderLayout()) {
 
-    private val table = object : TableView<TableRow>() {
-        override fun prepareEditor(editor: TableCellEditor?, row: Int, column: Int): Component {
-            (editor as? DefaultCellEditor)?.clickCountToStart = 2
-            return super.prepareEditor(editor, row, column)
-        }
-    }.also {
-        val header: JTableHeader = it.tableHeader
-
-        header.reorderingAllowed = false
-
-        it.rowHeight = PlatformIcons.CLASS_ICON.iconHeight * 2
-        it.preferredScrollableViewportSize = JBUI.size(-1, 150)
-        it.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION)
-
-        it.addKeyListener(object : KeyAdapter() {
-            override fun keyPressed(e: KeyEvent) {
-                super.keyPressed(e)
-                if (e.keyCode == KeyEvent.VK_DELETE || e.keyCode == KeyEvent.VK_BACK_SPACE) {
-                    doRemoveSelectedRows()
-                }
-
-            }
-        })
-    }
+    private val table = CustomDataTableView(project, ::doRemoveSelectedRows, ::sendUpdateQuery)
 
     private val rawQuery = object : SearchTextField(true, "moor_inspector_query") {
         override fun onFocusLost() {
@@ -134,24 +99,15 @@ class MoorInspectorTableView(
             this.rawQuery.addCurrentTextToHistory()
     }
 
-    fun update(dbId: String, table: MoorInspectorTable) {
+    fun update(dbId: String, databaseName: String, table: MoorInspectorTable) {
         currentDbId = dbId
         currentTable = table
         rawQuery.text = ""
         currentConfirmedSelectStatement = null
 
-        val model = ListTableModel(
-            table.columns.map {
-                TableViewColumnInfo(it, table)
-            }.toTypedArray(),
-            listOf(TableRow(emptyMap())),
-            0
-        )
+        this.table.updateModel(databaseName, table)
 
-        listUpdateHelper = ListUpdateHelper(model, TableRowComparator(table))
-
-        this.table.setModelAndUpdateColumns(model)
-        this.table.updateColumnSizes()
+        listUpdateHelper = ListUpdateHelper(this.table.internalModel, TableRowComparator(table))
 
         refresh()
     }
@@ -283,69 +239,6 @@ class MoorInspectorTableView(
             if (currentRequestId != requestId) return@ensureMain
             refreshAction.refreshing = false
             toolbar.updateActionsImmediately()
-        }
-    }
-
-    private inner class TableViewColumnInfo(val column: MoorInspectorColumn, private val table: MoorInspectorTable) :
-        ColumnInfo<TableRow, String>(column.name) {
-
-        override fun valueOf(item: TableRow?): String? {
-            val raw = item?.data?.get(column.name) ?: return null
-            @Suppress("UNCHECKED_CAST")
-            when (column.type.toLowerCase(Locale.getDefault())) {
-                "bit", "tinyint", "smallint", "int", "bigint", "integer" -> return (raw as Number).toLong().toString()
-                "float", "real", "double" -> return (raw as Number).toDouble().toString()
-                "char", "varchar", "text", "nchar", "nvarchar", "ntext" -> return raw.toString()
-                "date", "time", "datetime", "timestamp", "year" -> return DateTimeFormatter.ISO_INSTANT.format(
-                    Instant.ofEpochMilli(
-                        (raw as Number).toLong()
-                    )
-                )
-                "blob" -> return (raw as List<Int>).joinToString()
-            }
-            return raw.toString()
-        }
-
-        override fun isCellEditable(item: TableRow): Boolean {
-            return column.name.toLowerCase(Locale.getDefault()) != "rowid"
-        }
-
-        override fun setValue(item: TableRow, value: String?) {
-            try {
-                if (!isSame(item.data[column.name], value)) {
-                    sendUpdateQuery(table, column, item, value)
-                }
-            } catch (e: Throwable) {
-                NotificationUtil.error("Update failed", "Failed to update: ${e.message}", project)
-            }
-        }
-
-        private fun isSame(original: Any?, value: String?): Boolean {
-            if (original == null && value == null) return true
-            else if (original != null && value == null) return false
-            else if (original == null && value != null) return false
-
-            @Suppress("UNCHECKED_CAST")
-            when (column.type.toLowerCase(Locale.getDefault())) {
-                "bit", "tinyint", "smallint", "int", "bigint", "integer" -> return (original as? Number)?.toLong() == value?.toLong()
-                "float", "real", "double" -> return (original as? Number)?.toDouble() == value?.toDouble()
-                "char", "varchar", "text", "nchar", "nvarchar", "ntext" -> return original == value
-                "date", "time", "datetime", "timestamp", "year" -> {
-                    val newInstant = if (value != null) {
-                        value.toLongOrNull()
-                            ?: (DateTimeFormatter.ISO_INSTANT.parse(value) as? Instant)?.toEpochMilli()
-                    } else null
-                    val old = (original as? Number)?.toLong()
-
-                    return newInstant == old
-                }
-                "blob" -> return (original as? List<Int>) == value?.split(',')?.map { it.trim().toInt() }
-            }
-            throw IllegalStateException("Could create statement for column, type not supported: ${column.type}")
-        }
-
-        override fun getPreferredStringValue(): String? {
-            return column.name
         }
     }
 
