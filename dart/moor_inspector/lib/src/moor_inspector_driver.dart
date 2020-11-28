@@ -115,6 +115,14 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
         columnData['isRequired'] = column.isRequired;
         columnData['type'] = column.typeName;
         columnData['nullable'] = column.$nullable;
+        if (column is GeneratedIntColumn) {
+          columnData['autoIncrement'] = column.hasAutoIncrement;
+        } else if (column is GeneratedTextColumn) {
+          columnData['minTextLength'] = column.minTextLength;
+          columnData['maxTextLength'] = column.maxTextLength;
+        } else if (column is GeneratedBoolColumn) {
+          columnData['isBoolean'] = true;
+        }
 
         return columnData;
       }).toList();
@@ -147,13 +155,16 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
     jsonData['requestId'] = requestId;
 
     if (data.isNotEmpty) {
+      final columns = Set<String>();
       jsonData['data'] = data.map((row) {
         final rowItem = Map<String, dynamic>();
         row.data.forEach((key, value) {
+          columns.add(key);
           rowItem[key] = value;
         });
         return rowItem;
-      }).toList();
+      }).toList(growable: false);
+      jsonData['columns'] = columns.toList(growable: false);
     }
 
     final wrapper = Map<String, dynamic>();

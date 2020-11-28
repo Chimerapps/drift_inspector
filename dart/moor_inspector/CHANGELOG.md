@@ -1,3 +1,8 @@
+## 0.1.2
+
+- Include all column names in query
+- Extra column information (autoIncrement, text restrictions, boolean)
+
 ## 0.1.1
 
 - Cleanup code

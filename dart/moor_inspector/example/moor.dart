@@ -7,6 +7,8 @@ class Categories extends Table {
   IntColumn get id => integer().autoIncrement()();
 
   TextColumn get description => text().nullable()();
+
+  BoolColumn get exampleBool => boolean()();
 }
 
 class Recipes extends Table {
@@ -59,6 +61,16 @@ class ExampleDao extends DatabaseAccessor<Database> with _$ExampleDaoMixin {
       });
     });
   }
+
+  Future<void> replaceCategories(List<CategoriesCompanion> newCategories) {
+    return transaction(() async {
+      await delete(categories).go();
+
+      await batch((batch) {
+        batch.insertAll(categories, newCategories);
+      });
+    });
+  }
 }
 
 @UseMoor(tables: [
@@ -89,8 +101,8 @@ class Database extends _$Database {
     return MigrationStrategy(
       beforeOpen: (details) async {
         // populate data
-        await into(categories)
-            .insert(const CategoriesCompanion(description: Value('Sweets')));
+        await into(categories).insert(const CategoriesCompanion(
+            description: Value('Sweets'), exampleBool: Value(true)));
       },
     );
   }

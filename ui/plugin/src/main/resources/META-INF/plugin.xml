@@ -1,6 +1,6 @@
 <idea-plugin>
     <id>com.chimerapps.moorinspector</id>
-    <name>Moor Inspector</name>
+    <name>Database Inspector</name>
     <version>0.1.2</version>
     <vendor email="support@chimerapps.com" url="https://github.com/Chimerapps">chimerapps</vendor>
 

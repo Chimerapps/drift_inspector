@@ -36,7 +36,11 @@ data class MoorInspectorColumn(
     val name: String,
     val isRequired: Boolean,
     val type: String,
-    val nullable: Boolean
+    val nullable: Boolean,
+    val isBoolean: Boolean = false,
+    val autoIncrement: Boolean = false,
+    val minTextLength: Int? = null,
+    val maxTextLength: Int? = null
 )
 
 class MoorInspectorV1ProtocolHandler(private val messageListener: MoorInspectorMessageListener) :
@@ -71,6 +75,7 @@ class MoorInspectorV1ProtocolHandler(private val messageListener: MoorInspectorM
         val requestId = bodyObject.get("requestId").asString
 
         val data = bodyObject.get("data")
+        //TODO val columns = bodyObject.get("columns")
         if (data == null || data.isJsonNull) {
             messageListener.onFilterData(tableId, requestId, emptyList())
         } else {

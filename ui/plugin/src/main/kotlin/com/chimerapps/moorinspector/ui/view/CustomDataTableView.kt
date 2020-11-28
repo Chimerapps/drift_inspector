@@ -84,7 +84,7 @@ class CustomDataTableView(
         this.databaseName = databaseName
         this.table = table
 
-        val tableConfiguration = MoorProjectSettings.instance(project).state?.columnConfiguration?.databases?.find {
+        val tableConfiguration = MoorProjectSettings.instance(project).state.columnConfiguration?.databases?.find {
             it.databaseName == databaseName
         }?.configuration?.find {
             it.tableName == table.sqlName

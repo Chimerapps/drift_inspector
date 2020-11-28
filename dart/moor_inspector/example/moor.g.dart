@@ -10,16 +10,20 @@ part of 'moor.dart';
 class Category extends DataClass implements Insertable<Category> {
   final int id;
   final String description;
-  Category({@required this.id, this.description});
+  final bool exampleBool;
+  Category({@required this.id, this.description, @required this.exampleBool});
   factory Category.fromData(Map<String, dynamic> data, GeneratedDatabase db,
       {String prefix}) {
     final effectivePrefix = prefix ?? '';
     final intType = db.typeSystem.forDartType<int>();
     final stringType = db.typeSystem.forDartType<String>();
+    final boolType = db.typeSystem.forDartType<bool>();
     return Category(
       id: intType.mapFromDatabaseResponse(data['${effectivePrefix}id']),
       description: stringType
           .mapFromDatabaseResponse(data['${effectivePrefix}description']),
+      exampleBool: boolType
+          .mapFromDatabaseResponse(data['${effectivePrefix}example_bool']),
     );
   }
   @override
@@ -31,6 +35,9 @@ class Category extends DataClass implements Insertable<Category> {
     if (!nullToAbsent || description != null) {
       map['description'] = Variable<String>(description);
     }
+    if (!nullToAbsent || exampleBool != null) {
+      map['example_bool'] = Variable<bool>(exampleBool);
+    }
     return map;
   }
 
@@ -40,6 +47,9 @@ class Category extends DataClass implements Insertable<Category> {
       description: description == null && nullToAbsent
           ? const Value.absent()
           : Value(description),
+      exampleBool: exampleBool == null && nullToAbsent
+          ? const Value.absent()
+          : Value(exampleBool),
     );
   }
 
@@ -49,6 +59,7 @@ class Category extends DataClass implements Insertable<Category> {
     return Category(
       id: serializer.fromJson<int>(json['id']),
       description: serializer.fromJson<String>(json['description']),
+      exampleBool: serializer.fromJson<bool>(json['exampleBool']),
     );
   }
   @override
@@ -57,57 +68,69 @@ class Category extends DataClass implements Insertable<Category> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'description': serializer.toJson<String>(description),
+      'exampleBool': serializer.toJson<bool>(exampleBool),
     };
   }
 
-  Category copyWith({int id, String description}) => Category(
+  Category copyWith({int id, String description, bool exampleBool}) => Category(
         id: id ?? this.id,
         description: description ?? this.description,
+        exampleBool: exampleBool ?? this.exampleBool,
       );
   @override
   String toString() {
     return (StringBuffer('Category(')
           ..write('id: $id, ')
-          ..write('description: $description')
+          ..write('description: $description, ')
+          ..write('exampleBool: $exampleBool')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => $mrjf($mrjc(id.hashCode, description.hashCode));
+  int get hashCode => $mrjf(
+      $mrjc(id.hashCode, $mrjc(description.hashCode, exampleBool.hashCode)));
   @override
   bool operator ==(dynamic other) =>
       identical(this, other) ||
       (other is Category &&
           other.id == this.id &&
-          other.description == this.description);
+          other.description == this.description &&
+          other.exampleBool == this.exampleBool);
 }
 
 class CategoriesCompanion extends UpdateCompanion<Category> {
   final Value<int> id;
   final Value<String> description;
+  final Value<bool> exampleBool;
   const CategoriesCompanion({
     this.id = const Value.absent(),
     this.description = const Value.absent(),
+    this.exampleBool = const Value.absent(),
   });
   CategoriesCompanion.insert({
     this.id = const Value.absent(),
     this.description = const Value.absent(),
-  });
+    @required bool exampleBool,
+  }) : exampleBool = Value(exampleBool);
   static Insertable<Category> custom({
     Expression<int> id,
     Expression<String> description,
+    Expression<bool> exampleBool,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (description != null) 'description': description,
+      if (exampleBool != null) 'example_bool': exampleBool,
     });
   }
 
-  CategoriesCompanion copyWith({Value<int> id, Value<String> description}) {
+  CategoriesCompanion copyWith(
+      {Value<int> id, Value<String> description, Value<bool> exampleBool}) {
     return CategoriesCompanion(
       id: id ?? this.id,
       description: description ?? this.description,
+      exampleBool: exampleBool ?? this.exampleBool,
     );
   }
 
@@ -120,6 +143,9 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     if (description.present) {
       map['description'] = Variable<String>(description.value);
     }
+    if (exampleBool.present) {
+      map['example_bool'] = Variable<bool>(exampleBool.value);
+    }
     return map;
   }
 
@@ -127,7 +153,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
   String toString() {
     return (StringBuffer('CategoriesCompanion(')
           ..write('id: $id, ')
-          ..write('description: $description')
+          ..write('description: $description, ')
+          ..write('exampleBool: $exampleBool')
           ..write(')'))
         .toString();
   }
@@ -161,8 +188,22 @@ class $CategoriesTable extends Categories
     );
   }
 
+  final VerificationMeta _exampleBoolMeta =
+      const VerificationMeta('exampleBool');
+  GeneratedBoolColumn _exampleBool;
   @override
-  List<GeneratedColumn> get $columns => [id, description];
+  GeneratedBoolColumn get exampleBool =>
+      _exampleBool ??= _constructExampleBool();
+  GeneratedBoolColumn _constructExampleBool() {
+    return GeneratedBoolColumn(
+      'example_bool',
+      $tableName,
+      false,
+    );
+  }
+
+  @override
+  List<GeneratedColumn> get $columns => [id, description, exampleBool];
   @override
   $CategoriesTable get asDslTable => this;
   @override
@@ -182,6 +223,14 @@ class $CategoriesTable extends Categories
           _descriptionMeta,
           description.isAcceptableOrUnknown(
               data['description'], _descriptionMeta));
+    }
+    if (data.containsKey('example_bool')) {
+      context.handle(
+          _exampleBoolMeta,
+          exampleBool.isAcceptableOrUnknown(
+              data['example_bool'], _exampleBoolMeta));
+    } else if (isInserting) {
+      context.missing(_exampleBoolMeta);
     }
     return context;
   }

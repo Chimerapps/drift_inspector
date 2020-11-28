@@ -29,11 +29,16 @@ Future<void> main(List<String> arguments) async {
   print('Inspector stopped');
 }
 
-Future<void> _populateDatabase(Database database) {
-  return database.exampleDao.replaceRecipes([
+Future<void> _populateDatabase(Database database) async {
+  await database.exampleDao.replaceRecipes([
     Recipe(id: 1, title: 'Recipe 1', instructions: 'Instructions 1'),
     Recipe(id: 2, title: 'Recipe 2', instructions: 'Instructions 2'),
     Recipe(id: 3, title: 'Recipe 3', instructions: 'Instructions 3'),
     Recipe(id: 4, title: 'Recipe 4', instructions: 'Instructions 4'),
+  ]);
+
+  await database.exampleDao.replaceCategories([
+    CategoriesCompanion.insert(exampleBool: true),
+    CategoriesCompanion.insert(exampleBool: false),
   ]);
 }
