@@ -47,7 +47,6 @@ class CustomDataTableView(
                 if (e.keyCode == KeyEvent.VK_DELETE || e.keyCode == KeyEvent.VK_BACK_SPACE) {
                     doRemoveSelectedRows()
                 }
-
             }
         })
 
@@ -174,7 +173,17 @@ private class TableViewColumnInfo(
         val raw = item?.data?.get(column.name) ?: return null
         @Suppress("UNCHECKED_CAST")
         when (column.type.toLowerCase(Locale.getDefault())) {
-            "bit", "tinyint", "smallint", "int", "bigint", "integer" -> return (raw as Number).toLong().toString()
+            "bit", "tinyint", "smallint", "int", "bigint", "integer" -> {
+                val number = raw as Number
+                if (column.isBoolean) {
+                    return if (number.toInt() != 0) {
+                        "true"
+                    } else {
+                        "false"
+                    }
+                }
+                return number.toLong().toString()
+            }
             "float", "real", "double" -> return (raw as Number).toDouble().toString()
             "char", "varchar", "text", "nchar", "nvarchar", "ntext" -> return raw.toString()
             "date", "time", "datetime", "timestamp", "year" -> return DateTimeFormatter.ISO_INSTANT.format(
@@ -194,7 +203,10 @@ private class TableViewColumnInfo(
     override fun setValue(item: TableRow, value: String?) {
         try {
             if (!isSame(item.data[column.name], value)) {
-                sendUpdateQuery(table, column, item, value)
+                if (column.isBoolean)
+                    sendUpdateQuery(table, column, item, value?.let { if (it == "true") 1 else 0 }?.toString())
+                else
+                    sendUpdateQuery(table, column, item, value)
             }
         } catch (e: Throwable) {
             NotificationUtil.error("Update failed", "Failed to update: ${e.message}", project)
@@ -208,7 +220,13 @@ private class TableViewColumnInfo(
 
         @Suppress("UNCHECKED_CAST")
         when (column.type.toLowerCase(Locale.getDefault())) {
-            "bit", "tinyint", "smallint", "int", "bigint", "integer" -> return (original as? Number)?.toLong() == value?.toLong()
+            "bit", "tinyint", "smallint", "int", "bigint", "integer" -> {
+                val number = original as? Number
+                if (column.isBoolean) {
+                    return number?.toInt() == value?.equals("true")?.let { if (it) 1 else 0 }
+                }
+                return number?.toLong() == value?.toLong()
+            }
             "float", "real", "double" -> return (original as? Number)?.toDouble() == value?.toDouble()
             "char", "varchar", "text", "nchar", "nvarchar", "ntext" -> return original == value
             "date", "time", "datetime", "timestamp", "year" -> {

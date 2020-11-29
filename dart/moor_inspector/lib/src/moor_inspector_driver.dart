@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dart_service_announcement/dart_service_announcement.dart';
 import 'package:moor/moor.dart';
+import 'package:moor/sqlite_keywords.dart';
 import 'package:uuid/uuid.dart';
 
 import 'moor_inspector_server_base.dart';
@@ -231,6 +232,65 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
     throw MoorInspectorException(
         'Could not map variable type: ${e.type}, no mapping known');
   }
+
+  @override
+  Future<List<int>> export(
+    String databaseId,
+    String requestId,
+    List<String> tables,
+  ) async {
+    final db = _databases
+        .firstWhere((element) => element.id == databaseId, orElse: () => null)
+        ?.database;
+    if (db == null) return Future.error(const NoSuchDatabaseException());
+
+    final filteredTables = (tables == null || tables.isEmpty)
+        ? db.allTables
+        : db.allTables
+            .where((element) => tables.contains(element.actualTableName));
+
+    final schemas = _createSchema(db, filteredTables);
+
+    final tableData = List<Map<String, dynamic>>();
+
+    final jsonData = Map<String, dynamic>();
+    jsonData['databaseId'] = databaseId;
+    jsonData['requestId'] = requestId;
+    jsonData['schemas'] = schemas;
+    jsonData['data'] = tableData;
+
+    await Future.wait(filteredTables.map((e) async {
+      final root = Map<String, dynamic>();
+      final queryResult =
+          await db.customSelect('SELECT * FROM ${e.actualTableName}').get();
+
+      root['name'] = e.actualTableName;
+      root['data'] = queryResult.map((row) {
+        final rowItem = Map<String, dynamic>();
+        row.data.forEach((key, value) {
+          rowItem[key] = value;
+        });
+        return rowItem;
+      }).toList(growable: false);
+
+      tableData.add(root);
+    }));
+
+    final wrapper = Map<String, dynamic>();
+    wrapper['type'] = 'exportResult';
+    wrapper['body'] = jsonData;
+
+    return utf8.encode(json.encode(wrapper));
+  }
+
+  List<String> _createSchema(
+      GeneratedDatabase database, Iterable<TableInfo> tables) {
+    return tables.map((table) {
+      final context = GenerationContext.fromDb(database);
+      _createTableStatement(table, context);
+      return context.sql;
+    }).toList(growable: false);
+  }
 }
 
 class DatabaseHolder {
@@ -255,4 +315,57 @@ class MoorInspectorException implements Exception {
 
   @override
   String toString() => message;
+}
+
+void _createTableStatement(TableInfo table, GenerationContext context) {
+  context.buffer.write('CREATE TABLE IF NOT EXISTS ${table.$tableName} (');
+
+  var hasAutoIncrement = false;
+  for (var i = 0; i < table.$columns.length; i++) {
+    final column = table.$columns[i];
+
+    if (column is GeneratedIntColumn && column.hasAutoIncrement) {
+      hasAutoIncrement = true;
+    }
+
+    column.writeColumnDefinition(context);
+
+    if (i < table.$columns.length - 1) context.buffer.write(', ');
+  }
+
+  final dslTable = table.asDslTable;
+
+// we're in a bit of a hacky situation where we don't write the primary
+// as table constraint if it has already been written on a primary key
+// column, even though that column appears in table.$primaryKey because we
+// need to know all primary keys for the update(table).replace(row) API
+  final hasPrimaryKey = table.$primaryKey?.isNotEmpty ?? false;
+  final dontWritePk = dslTable.dontWriteConstraints || hasAutoIncrement;
+  if (hasPrimaryKey && !dontWritePk) {
+    context.buffer.write(', PRIMARY KEY (');
+    final pkList = table.$primaryKey.toList(growable: false);
+    for (var i = 0; i < pkList.length; i++) {
+      final column = pkList[i];
+
+      context.buffer.write(escapeIfNeeded(column.$name));
+
+      if (i != pkList.length - 1) context.buffer.write(', ');
+    }
+    context.buffer.write(')');
+  }
+
+  final constraints = dslTable.customConstraints ?? [];
+
+  for (var i = 0; i < constraints.length; i++) {
+    context.buffer..write(', ')..write(constraints[i]);
+  }
+
+  context.buffer.write(')');
+
+// == true because of nullability
+  if (dslTable.withoutRowId == true) {
+    context.buffer.write(' WITHOUT ROWID');
+  }
+
+  context.buffer.write(';');
 }

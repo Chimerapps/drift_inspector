@@ -43,6 +43,18 @@ data class MoorInspectorColumn(
     val maxTextLength: Int? = null
 )
 
+data class ExportResponse(
+    val databaseId: String,
+    val requestId: String,
+    val schemas: List<String>,
+    val data: List<ExportData>
+)
+
+data class ExportData(
+    val name: String,
+    val data: List<Map<String, Any?>>
+)
+
 class MoorInspectorV1ProtocolHandler(private val messageListener: MoorInspectorMessageListener) :
     MoorInspectorProtocol {
 
@@ -52,6 +64,7 @@ class MoorInspectorV1ProtocolHandler(private val messageListener: MoorInspectorM
         const val MESSAGE_TYPE_UPDATE_RESULT = "updateResult"
         const val MESSAGE_TYPE_ERROR = "error"
         const val MESSAGE_TYPE_BULK_RESPONSE = "bulkResponse"
+        const val MESSAGE_TYPE_EXPORT_RESPONSE = "exportResult"
     }
 
     private val gson = Gson()
@@ -65,7 +78,14 @@ class MoorInspectorV1ProtocolHandler(private val messageListener: MoorInspectorM
             MESSAGE_TYPE_UPDATE_RESULT -> onUpdateResult(message.get("body"))
             MESSAGE_TYPE_ERROR -> onError(message.get("body"))
             MESSAGE_TYPE_BULK_RESPONSE -> onBulkResult(message.get("body"))
+            MESSAGE_TYPE_EXPORT_RESPONSE -> onExportResult(message.get("body"))
         }
+    }
+
+    private fun onExportResult(body: JsonElement) {
+        print(body)
+        val exportResponse = gson.fromJson(body, ExportResponse::class.java)
+        messageListener.onExportResult(exportResponse.databaseId, exportResponse.requestId, exportResponse)
     }
 
     private fun onFilterResult(body: JsonElement) {

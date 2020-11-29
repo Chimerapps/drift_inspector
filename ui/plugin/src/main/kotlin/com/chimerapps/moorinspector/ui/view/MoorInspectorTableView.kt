@@ -1,17 +1,23 @@
 package com.chimerapps.moorinspector.ui.view
 
+import com.chimerapps.moorinspector.client.protocol.ExportResponse
 import com.chimerapps.moorinspector.client.protocol.MoorInspectorColumn
+import com.chimerapps.moorinspector.client.protocol.MoorInspectorDatabase
 import com.chimerapps.moorinspector.client.protocol.MoorInspectorTable
+import com.chimerapps.moorinspector.export.sql.SqlExportHandler
 import com.chimerapps.moorinspector.ui.actions.RefreshAction
 import com.chimerapps.moorinspector.ui.util.NotificationUtil
 import com.chimerapps.moorinspector.ui.util.ensureMain
 import com.chimerapps.moorinspector.ui.util.list.DiffUtilComparator
 import com.chimerapps.moorinspector.ui.util.list.ListUpdateHelper
 import com.chimerapps.moorinspector.ui.util.mapNotNull
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionToolbar
+import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.project.Project
+import com.intellij.ui.AnActionButton
 import com.intellij.ui.SearchTextField
 import com.intellij.ui.ToolbarDecorator
 import net.sf.jsqlparser.parser.CCJSqlParserManager
@@ -20,6 +26,7 @@ import net.sf.jsqlparser.statement.insert.Insert
 import net.sf.jsqlparser.statement.select.Select
 import net.sf.jsqlparser.statement.update.Update
 import java.awt.BorderLayout
+import java.io.File
 import java.io.StringReader
 import java.time.Instant
 import java.time.format.DateTimeFormatter
@@ -43,6 +50,7 @@ class MoorInspectorTableView(
 
     private var currentRequestId: String? = null
     private var currentDbId: String? = null
+    private var currentDatabase: MoorInspectorDatabase? = null
     private var currentTable: MoorInspectorTable? = null
     private var listUpdateHelper: ListUpdateHelper<TableRow>? = null
     private var currentConfirmedSelectStatement: String? = null
@@ -70,6 +78,16 @@ class MoorInspectorTableView(
         decorator.disableUpDownActions()
         decorator.disableAddAction() //TODO re-enable
         decorator.setRemoveAction { doRemoveSelectedRows() }
+        decorator.addExtraAction(object : AnActionButton("Export", AllIcons.Actions.Menu_saveall) {
+            override fun actionPerformed(e: AnActionEvent?) {
+                //TODO
+                currentDatabase?.let { database ->
+                    val names = database.structure.tables.map { it.sqlName }
+                    val requestId = UUID.randomUUID().toString()
+                    helper.export(requestId, database.id, names)
+                }
+            }
+        })
 
         table.autoResizeMode = JTable.AUTO_RESIZE_OFF
 
@@ -99,8 +117,9 @@ class MoorInspectorTableView(
             this.rawQuery.addCurrentTextToHistory()
     }
 
-    fun update(dbId: String, databaseName: String, table: MoorInspectorTable) {
+    fun update(dbId: String, database: MoorInspectorDatabase, databaseName: String, table: MoorInspectorTable) {
         currentDbId = dbId
+        currentDatabase = database
         currentTable = table
         rawQuery.text = ""
         currentConfirmedSelectStatement = null
@@ -331,6 +350,15 @@ class MoorInspectorTableView(
             }
         }
     }
+
+    fun onExportResult(databaseId: String, requestId: String, exportResponse: ExportResponse) {
+        if (currentDbId != databaseId) return
+
+        val database = currentDatabase ?: return
+
+        val handler = SqlExportHandler(File("/Users/nicolaverbeeck/Work/Chimerapps/Tools/moor_inspector/ui/test.db").also { it.delete() })
+        handler.handle(exportResponse, database)
+    }
 }
 
 data class TableRow(val data: Map<String, Any?>)
@@ -366,6 +394,8 @@ interface MoorInspectorTableQueryHelper {
     )
 
     fun bulkUpdate(requestId: String, databaseId: String, data: List<BulkActionData>)
+
+    fun export(requestId: String, databaseId: String, tableNames: List<String>)
 
 }
 

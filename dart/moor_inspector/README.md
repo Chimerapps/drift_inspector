@@ -33,6 +33,10 @@ main() async {
 }
 ```
 
+## Web support
+Web is only supported as a target to ensure you can build your code.
+Due to some architectural differences (most notably lack of dart:io support), discovering and communication with a web app is currently not possible.
+
 ## Features and bugs
 
 Please file feature requests and bugs at the [issue tracker][tracker].

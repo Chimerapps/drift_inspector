@@ -63,6 +63,7 @@ class _MooreInspectorConnectionImpl extends MooreInspectorConnection {
   static const _MESSAGE_FILTER = 'filter';
   static const _MESSAGE_UPDATE = 'update';
   static const _MESSAGE_BATCH = 'batch';
+  static const _MESSAGE_EXPORT = 'export';
 
   final WebSocket _socket;
   final ConnectionListener _listener;
@@ -99,6 +100,8 @@ class _MooreInspectorConnectionImpl extends MooreInspectorConnection {
         return _handleUpdateRequest(body, sendResponse);
       case _MESSAGE_BATCH:
         return _handleBulkRequest(body, sendResponse);
+      case _MESSAGE_EXPORT:
+        return _handleExport(body);
     }
     return Future.value();
   }
@@ -183,6 +186,21 @@ class _MooreInspectorConnectionImpl extends MooreInspectorConnection {
         sendMessageUTF8(utf8.encode(json.encode(wrapper)));
       }
     }
+  }
+
+  Future<void> _handleExport(Map<String, dynamic> parsedJson) async {
+    final id = parsedJson['databaseId'] as String;
+    final tables = parsedJson.containsKey('tables')
+        ? (parsedJson['tables'] as List<dynamic>)
+            .map((it) => it.toString())
+            .toList()
+        : null;
+    final requestId = parsedJson['requestId'] as String;
+
+    await _sendOrError(
+      requestId,
+      _listener.export(id, requestId, tables),
+    );
   }
 
   Future<void> _sendOrError(

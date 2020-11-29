@@ -2,6 +2,7 @@ package com.chimerapps.moorinspector.client
 
 import com.chimerapps.discovery.utils.debug
 import com.chimerapps.discovery.utils.logger
+import com.chimerapps.moorinspector.client.protocol.ExportResponse
 import com.chimerapps.moorinspector.client.protocol.MoorInspectorProtocol
 import com.chimerapps.moorinspector.client.protocol.MoorInspectorServerInfo
 import com.chimerapps.moorinspector.client.protocol.MoorInspectorV1ProtocolHandler
@@ -83,6 +84,10 @@ class MoorInspectorClient(serverURI: URI) : MoorInspectorMessageListener, Closea
         clientListeners.forEach { it.onBulkUpdateResult(requestId) }
     }
 
+    override fun onExportResult(databaseId: String, requestId: String, exportResponse: ExportResponse) {
+        clientListeners.forEach { it.onExportResult(databaseId, requestId, exportResponse) }
+    }
+
     fun query(requestId: String, databaseId: String, query: String) {
         socketClient.sendString("{\"type\":\"filter\", \"body\": {\"databaseId\":\"$databaseId\",\"requestId\":\"$requestId\",\"query\":\"$query\"}}")
     }
@@ -133,6 +138,19 @@ class MoorInspectorClient(serverURI: URI) : MoorInspectorMessageListener, Closea
         })
         socketClient.sendString(json.toString())
     }
+
+    fun export(requestId: String, databaseId: String, tableNames: List<String>) {
+        val json = JsonObject()
+        json.addProperty("type", "export")
+        json.add("body", JsonObject().also { body ->
+            body.addProperty("databaseId", databaseId)
+            body.addProperty("requestId", requestId)
+            body.add("tables", JsonArray().also { array ->
+                tableNames.forEach { tableName -> array.add(tableName) }
+            })
+        })
+        socketClient.sendString(json.toString())
+    }
 }
 
 interface MoorInspectorMessageListener {
@@ -152,6 +170,8 @@ interface MoorInspectorMessageListener {
     fun onError(requestId: String, message: String) {}
 
     fun onReady() {}
+
+    fun onExportResult(databaseId: String, requestId: String, exportResponse: ExportResponse) {}
 }
 
 private class WebSocketMoorInspectorClient(serverURI: URI, private val parent: MoorInspectorClient) :

@@ -29,6 +29,12 @@ abstract class ConnectionListener {
     List<InspectorVariable> variables, {
     bool sendResponse = true,
   });
+
+  Future<List<int>> export(
+    String databaseId,
+    String requestId,
+    List<String> tables,
+  );
 }
 
 abstract class MooreInspectorConnection {

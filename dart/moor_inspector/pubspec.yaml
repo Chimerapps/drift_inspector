@@ -1,6 +1,6 @@
 name: moor_inspector
 description: A dart library to enable development time inspection and modification of your moor databases
-version: 0.1.2
+version: 0.1.3
 homepage: https://github.com/Chimerapps/moor_inspector
 
 environment:

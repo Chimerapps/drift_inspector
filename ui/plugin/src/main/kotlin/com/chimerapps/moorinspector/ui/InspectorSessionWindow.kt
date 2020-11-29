@@ -10,6 +10,7 @@ import com.chimerapps.discovery.ui.ManualConnection
 import com.chimerapps.discovery.utils.freePort
 import com.chimerapps.moorinspector.client.MoorInspectorClient
 import com.chimerapps.moorinspector.client.MoorInspectorMessageListener
+import com.chimerapps.moorinspector.client.protocol.ExportResponse
 import com.chimerapps.moorinspector.client.protocol.MoorInspectorServerInfo
 import com.chimerapps.moorinspector.ui.actions.ConnectAction
 import com.chimerapps.moorinspector.ui.actions.DisconnectAction
@@ -48,7 +49,7 @@ class InspectorSessionWindow(
     private var lastConnection: PreparedDeviceConnection? = null
     private val statusBar = MoorInspectorStatusBar()
     private val tablesView = MoorInspectorTablesView() { db, table ->
-        tableView.update(db.id, db.name, table)
+        tableView.update(db.id, db, db.name, table)
     }
     private val tableView = MoorInspectorTableView(this, project)
 
@@ -188,6 +189,10 @@ class InspectorSessionWindow(
         client?.query(requestId, databaseId, query)
     }
 
+    override fun onExportResult(databaseId: String, requestId: String, exportResponse: ExportResponse) {
+        tableView.onExportResult(databaseId, requestId, exportResponse)
+    }
+
     override fun updateItem(
         requestId: String,
         databaseId: String,
@@ -200,6 +205,10 @@ class InspectorSessionWindow(
 
     override fun bulkUpdate(requestId: String, databaseId: String, data: List<BulkActionData>) {
         client?.bulkUpdate(requestId, databaseId, data)
+    }
+
+    override fun export(requestId: String, databaseId: String, tableNames: List<String>) {
+        client?.export(requestId, databaseId, tableNames)
     }
 
     fun onWindowClosed() {

@@ -27,6 +27,7 @@ def pluginCompile = [
         commonText  : "org.apache.commons:commons-text:${versions.commonText}",
         websocket   : "org.java-websocket:Java-WebSocket:${versions.websocket}",
         sqlParser   : "com.github.jsqlparser:jsqlparser:${versions.sqlParser}",
+        sqlite      : "org.xerial:sqlite-jdbc:${versions.sqlite}",
 ]
 
 def libTestCompile = [
