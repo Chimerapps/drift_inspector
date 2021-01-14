@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:dart_service_announcement/dart_service_announcement.dart';
 import 'package:moor/moor.dart';
 import 'package:moor/sqlite_keywords.dart';
-import 'package:uuid/uuid.dart';
+import 'package:moor_inspector/src/uuid.dart';
 
 import 'moor_inspector_server_base.dart';
 import 'moore_inspector_empty.dart'
@@ -20,14 +20,14 @@ const _VARIABLE_TYPE_BLOB = 'blob';
 const _VARIABLE_TYPE_DATETIME = 'datetime';
 
 class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
-  final _databases = List<DatabaseHolder>();
-  final MoorInspectorServer _server;
+  final _databases = <DatabaseHolder>[];
+  late final MoorInspectorServer _server;
   final String _bundleId;
-  final String _icon;
-  final String _tag = Uuid().v4().substring(0, 6);
-  BaseServerAnnouncementManager _announcementManager;
-  List<int> _serverIdData;
-  List<int> _serverProtocolData;
+  final String? _icon;
+  final String _tag = SimpleUUID.uuid().substring(0, 6);
+  late final BaseServerAnnouncementManager _announcementManager;
+  late List<int> _serverIdData;
+  late final List<int> _serverProtocolData;
 
   @override
   int get port => _server.port;
@@ -50,7 +50,7 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
     _announcementManager =
         ServerAnnouncementManager(_bundleId, _ANNOUNCEMENT_PORT, this);
     if (_icon != null) {
-      _announcementManager.addExtension(IconExtension(_icon));
+      _announcementManager.addExtension(IconExtension(_icon!));
     }
     _announcementManager.addExtension(TagExtension(_tag));
 
@@ -107,7 +107,7 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
       table['sqlName'] = tableInfo.actualTableName;
       table['withoutRowId'] = tableInfo.withoutRowId;
       table['primaryKey'] =
-          tableInfo.$primaryKey?.map((column) => column.$name)?.toList();
+          tableInfo.$primaryKey.map((column) => column.$name).toList();
 
       table['columns'] = tableInfo.$columns.map((column) {
         final columnData = Map<String, dynamic>();
@@ -141,9 +141,8 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
     List<InspectorVariable> variables, {
     bool sendResponse = true,
   }) async {
-    final db = _databases
-        .firstWhere((element) => element.id == databaseId, orElse: () => null)
-        ?.database;
+    final db =
+        _databases.firstOrNull((element) => element.id == databaseId)?.database;
     if (db == null) return Future.error(const NoSuchDatabaseException());
 
     final select =
@@ -184,9 +183,8 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
     List<InspectorVariable> variables, {
     bool sendResponse = true,
   }) async {
-    final db = _databases
-        .firstWhere((element) => element.id == databaseId, orElse: () => null)
-        ?.database;
+    final db =
+        _databases.firstOrNull((element) => element.id == databaseId)?.database;
     if (db == null) return Future.error(const NoSuchDatabaseException());
 
     final numUpdated = await db.customUpdate(
@@ -237,11 +235,10 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
   Future<List<int>> export(
     String databaseId,
     String requestId,
-    List<String> tables,
+    List<String>? tables,
   ) async {
-    final db = _databases
-        .firstWhere((element) => element.id == databaseId, orElse: () => null)
-        ?.database;
+    final db =
+        _databases.firstOrNull((element) => element.id == databaseId)?.database;
     if (db == null) return Future.error(const NoSuchDatabaseException());
 
     final filteredTables = (tables == null || tables.isEmpty)
@@ -251,7 +248,7 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
 
     final schemas = _createSchema(db, filteredTables);
 
-    final tableData = List<Map<String, dynamic>>();
+    final tableData = <Map<String, dynamic>>[];
 
     final jsonData = Map<String, dynamic>();
     jsonData['databaseId'] = databaseId;
@@ -368,4 +365,12 @@ void _createTableStatement(TableInfo table, GenerationContext context) {
   }
 
   context.buffer.write(';');
+}
+
+extension _ListExtension<T> on List<T> {
+  T? firstOrNull(bool test(T element)) {
+    final index = indexWhere(test);
+    if (index >= 0) return this[index];
+    return null;
+  }
 }

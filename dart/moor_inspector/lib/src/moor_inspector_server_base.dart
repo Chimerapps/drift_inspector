@@ -2,7 +2,7 @@ abstract class MoorInspectorServer {
   ///The port the tooling server is running on
   int get port;
 
-  ConnectionListener connectionListener;
+  late ConnectionListener connectionListener;
 
   Future<void> start();
 
@@ -33,7 +33,7 @@ abstract class ConnectionListener {
   Future<List<int>> export(
     String databaseId,
     String requestId,
-    List<String> tables,
+    List<String>? tables,
   );
 }
 

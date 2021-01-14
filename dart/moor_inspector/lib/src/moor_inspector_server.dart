@@ -8,13 +8,13 @@ import 'moor_inspector_server_base.dart';
 MoorInspectorServer createServer(int port) => _MooreInspectorServerImpl(port);
 
 class _MooreInspectorServerImpl extends MoorInspectorServer {
-  HttpServer _server;
+  HttpServer? _server;
   final int _port;
-  final _connections = List<MooreInspectorConnection>();
+  final _connections = <MooreInspectorConnection>[];
   final _lock = Lock();
 
   @override
-  int get port => _server.port;
+  int get port => _server?.port ?? -1;
 
   _MooreInspectorServerImpl(this._port);
 
@@ -23,13 +23,13 @@ class _MooreInspectorServerImpl extends MoorInspectorServer {
   Future<void> start() async {
     _server = await HttpServer.bind(InternetAddress.loopbackIPv4, _port)
       ..transform(WebSocketTransformer()).listen(_onNewConnection);
-    print('Server running on ${_server.port}');
+    print('Server running on ${_server!.port}');
   }
 
   /// Stops the server
   @override
   Future<void> stop() async {
-    await _server.close(force: true);
+    await _server?.close(force: true);
     _server = null;
     await _lock.synchronized(() async {
       _connections.forEach((socket) => socket.close());
@@ -92,7 +92,7 @@ class _MooreInspectorConnectionImpl extends MooreInspectorConnection {
   }
 
   Future<void> _handleType(String type, Map<String, dynamic> body,
-      {bool sendResponse}) {
+      {required bool sendResponse}) {
     switch (type) {
       case _MESSAGE_FILTER:
         return _handleFilterRequest(body, sendResponse);
@@ -154,7 +154,7 @@ class _MooreInspectorConnectionImpl extends MooreInspectorConnection {
     final actions = parsedJson['actions'] as List;
     final requestId = parsedJson['requestId'] as String;
 
-    Exception lastException;
+    Exception? lastException;
     actions.forEach((action) async {
       final actionInternal = action as Map<String, dynamic>;
       final type = actionInternal['type'] as String;
