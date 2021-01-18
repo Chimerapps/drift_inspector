@@ -95,14 +95,15 @@ class MoorInspectorV1ProtocolHandler(private val messageListener: MoorInspectorM
         val requestId = bodyObject.get("requestId").asString
 
         val data = bodyObject.get("data")
-        //TODO val columns = bodyObject.get("columns")
+        val columns = bodyObject.get("columns")
         if (data == null || data.isJsonNull) {
-            messageListener.onFilterData(tableId, requestId, emptyList())
+            messageListener.onFilterData(tableId, requestId, emptyList(), emptyList())
         } else {
+            val stringColumns = columns.asJsonArray.map { it.asString }
             val rows = data.asJsonArray.map {
                 gson.fromJson<Map<String, Any?>>(it, object : TypeToken<Map<String, Any?>>() {}.type)
             }
-            messageListener.onFilterData(tableId, requestId, rows)
+            messageListener.onFilterData(tableId, requestId, rows, stringColumns)
         }
     }
 

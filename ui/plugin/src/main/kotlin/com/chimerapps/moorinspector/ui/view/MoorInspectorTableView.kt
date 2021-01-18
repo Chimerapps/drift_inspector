@@ -231,13 +231,18 @@ class MoorInspectorTableView(
         }
     }
 
-    fun onQueryResults(requestId: String, data: List<Map<String, Any?>>) {
+    fun onQueryResults(requestId: String, data: List<Map<String, Any?>>, columns: List<String>) {
         ensureMain {
             if (currentRequestId != requestId) return@ensureMain
 
-            refreshAction.refreshing = false
-            toolbar.updateActionsImmediately()
-            listUpdateHelper?.onListUpdated(data.map { TableRow(it) })
+            currentTable?.let { table ->
+                refreshAction.refreshing = false
+                toolbar.updateActionsImmediately()
+                if (this.table.ensureColumns(columns)) {
+                    listUpdateHelper = ListUpdateHelper(this.table.internalModel, TableRowComparator(table))
+                }
+                listUpdateHelper?.onListUpdated(data.map { TableRow(it) })
+            }
         }
     }
 

@@ -336,7 +336,7 @@ void _createTableStatement(TableInfo table, GenerationContext context) {
 // as table constraint if it has already been written on a primary key
 // column, even though that column appears in table.$primaryKey because we
 // need to know all primary keys for the update(table).replace(row) API
-  final hasPrimaryKey = table.$primaryKey?.isNotEmpty ?? false;
+  final hasPrimaryKey = table.$primaryKey.isNotEmpty;
   final dontWritePk = dslTable.dontWriteConstraints || hasAutoIncrement;
   if (hasPrimaryKey && !dontWritePk) {
     context.buffer.write(', PRIMARY KEY (');
@@ -351,7 +351,7 @@ void _createTableStatement(TableInfo table, GenerationContext context) {
     context.buffer.write(')');
   }
 
-  final constraints = dslTable.customConstraints ?? [];
+  final constraints = dslTable.customConstraints;
 
   for (var i = 0; i < constraints.length; i++) {
     context.buffer..write(', ')..write(constraints[i]);

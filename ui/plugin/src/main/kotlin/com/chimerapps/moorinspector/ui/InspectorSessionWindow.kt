@@ -48,7 +48,7 @@ class InspectorSessionWindow(
     private var client: MoorInspectorClient? = null
     private var lastConnection: PreparedDeviceConnection? = null
     private val statusBar = MoorInspectorStatusBar()
-    private val tablesView = MoorInspectorTablesView() { db, table ->
+    private val tablesView = MoorInspectorTablesView { db, table ->
         tableView.update(db.id, db, db.name, table)
     }
     private val tableView = MoorInspectorTableView(this, project)
@@ -168,8 +168,11 @@ class InspectorSessionWindow(
         connectionMode = ConnectionMode.MODE_CONNECTED
     }
 
-    override fun onFilterData(tableId: String, requestId: String, rows: List<Map<String, Any?>>) {
-        tableView.onQueryResults(requestId, rows)
+    override fun onFilterData(tableId: String,
+                              requestId: String,
+                              rows: List<Map<String, Any?>>,
+                              columns: List<String>) {
+        tableView.onQueryResults(requestId, rows, columns)
     }
 
     override fun onUpdateResult(tableId: String, requestId: String, numRowsUpdated: Int) {

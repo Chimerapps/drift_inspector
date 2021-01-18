@@ -56,8 +56,11 @@ class MoorInspectorClient(serverURI: URI) : MoorInspectorMessageListener, Closea
         socketClient.close()
     }
 
-    override fun onFilterData(tableId: String, requestId: String, rows: List<Map<String, Any?>>) {
-        clientListeners.forEach { it.onFilterData(tableId, requestId, rows) }
+    override fun onFilterData(tableId: String,
+                              requestId: String,
+                              rows: List<Map<String, Any?>>,
+                              columns: List<String>) {
+        clientListeners.forEach { it.onFilterData(tableId, requestId, rows, columns) }
     }
 
     override fun onClosed() {
@@ -159,7 +162,7 @@ interface MoorInspectorMessageListener {
      */
     fun onClosed() {}
 
-    fun onFilterData(tableId: String, requestId: String, rows: List<Map<String, Any?>>) {}
+    fun onFilterData(tableId: String, requestId: String, rows: List<Map<String, Any?>>, columns: List<String>) {}
 
     fun onUpdateResult(tableId: String, requestId: String, numRowsUpdated: Int) {}
 

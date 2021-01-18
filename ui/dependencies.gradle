@@ -3,13 +3,13 @@ def versions = [
         websocket         : '1.5.1',
         intelliJPlugin    : '0.4.8',
         minIntelliJ       : '2018.2',
-        discoveryLib      : '1.3.0',
-        discoveryPluginLib: '1.4.0',
-        sqlite            : '3.31.1',
+        discoveryLib      : '1.3.1',
+        discoveryPluginLib: '1.4.1',
+        sqlite            : '3.34.0',
         dokkaPlugin       : '0.9.17',
-        versionsPlugin    : '0.21.0',
+        versionsPlugin    : '0.36.0',
         commonText        : '1.8',
-        sqlParser         : '3.2',
+        sqlParser         : '4.0',
 ]
 
 ext.versions = versions

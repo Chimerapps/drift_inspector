@@ -62,6 +62,7 @@ class CustomDataTableView(
     lateinit var internalModel: ListTableModel<TableRow>
     private var databaseName: String? = null
     private var table: MoorInspectorTable? = null
+    private var activeColumns: List<MoorInspectorColumn> = emptyList()
     private val columnObserver = object : TableColumnModelListener {
         override fun columnAdded(e: TableColumnModelEvent?) {}
 
@@ -83,15 +84,40 @@ class CustomDataTableView(
         this.databaseName = databaseName
         this.table = table
 
+        activeColumns = this.table?.columns.orEmpty()
+        createTableColumnModel()
+    }
+
+    fun ensureColumns(columns: List<String>): Boolean {
+        val newActiveColumns = if (columns.isEmpty()) {
+            table?.columns.orEmpty()
+        } else {
+            val newColumns = table?.columns?.filter { it.name in columns }.orEmpty()
+            if (newColumns.isEmpty()) {
+                columns.map {
+                    MoorInspectorColumn(it, false, "TEXT", true, )
+                }
+            } else {
+                activeColumns
+            }
+        }
+        if (newActiveColumns == activeColumns)
+            return false
+        activeColumns = newActiveColumns
+        createTableColumnModel()
+        return true
+    }
+
+    private fun createTableColumnModel() {
         val tableConfiguration = MoorProjectSettings.instance(project).state.columnConfiguration?.databases?.find {
             it.databaseName == databaseName
         }?.configuration?.find {
-            it.tableName == table.sqlName
+            it.tableName == table!!.sqlName
         }
 
         val model = ListTableModel(
-            table.columns.map {
-                TableViewColumnInfo(project, sendUpdateQuery, it, table)
+            activeColumns.map {
+                TableViewColumnInfo(project, sendUpdateQuery, it, this.table!!)
             }.toTypedArray(),
             listOf(TableRow(emptyMap())),
             0
@@ -102,7 +128,7 @@ class CustomDataTableView(
         setModelAndUpdateColumns(model)
 
         if (tableConfiguration != null) {
-            table.columns.forEachIndexed { index, col ->
+            table!!.columns.forEachIndexed { index, col ->
                 tableConfiguration.columns.find { it.columnName == col.name }?.let { columnConfig ->
                     val column = columnModel.getColumn(index)
                     column.minWidth = 15
