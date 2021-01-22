@@ -4,7 +4,6 @@ import com.chimerapps.discovery.device.DirectPreparedConnection
 import com.chimerapps.discovery.device.PreparedDeviceConnection
 import com.chimerapps.discovery.device.idevice.IDeviceBootstrap
 import com.chimerapps.discovery.ui.ConnectDialog
-import com.chimerapps.discovery.ui.ConnectDialogLocalization
 import com.chimerapps.discovery.ui.DiscoveredDeviceConnection
 import com.chimerapps.discovery.ui.ManualConnection
 import com.chimerapps.discovery.utils.freePort
@@ -22,6 +21,7 @@ import com.chimerapps.moorinspector.ui.view.*
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import com.intellij.ui.JBSplitter
 import com.intellij.ui.content.Content
@@ -96,10 +96,17 @@ class InspectorSessionWindow(
         val result = ConnectDialog.show(
             SwingUtilities.getWindowAncestor(this),
             toolWindow.adbInterface ?: return,
-            IDeviceBootstrap(File(MoorInspectorSettings.instance.iDeviceBinariesPath ?: DEFAULT_IDEVICE_PATH)),
+            IDeviceBootstrap(File(MoorInspectorSettings.instance.state.iDeviceBinariesPath ?: DEFAULT_IDEVICE_PATH)),
             6395,
             sessionIconProvider = ProjectSessionIconProvider.instance(project),
-            localization = object : ConnectDialogLocalization {}) ?: return
+            configurePluginCallback = {
+                ShowSettingsUtil.getInstance().showSettingsDialog(project, "MoorInspectorRoot")
+                toolWindow.adbInterface!! to IDeviceBootstrap(
+                    File(
+                        MoorInspectorSettings.instance.state.iDeviceBinariesPath ?: DEFAULT_IDEVICE_PATH
+                    )
+                )
+            }) ?: return
 
         result.discovered?.let {
             tryConnectSession(it)
@@ -168,10 +175,12 @@ class InspectorSessionWindow(
         connectionMode = ConnectionMode.MODE_CONNECTED
     }
 
-    override fun onFilterData(tableId: String,
-                              requestId: String,
-                              rows: List<Map<String, Any?>>,
-                              columns: List<String>) {
+    override fun onFilterData(
+        tableId: String,
+        requestId: String,
+        rows: List<Map<String, Any?>>,
+        columns: List<String>
+    ) {
         tableView.onQueryResults(requestId, rows, columns)
     }
 

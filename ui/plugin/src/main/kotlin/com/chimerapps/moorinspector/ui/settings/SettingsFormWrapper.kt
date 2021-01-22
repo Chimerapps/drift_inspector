@@ -2,11 +2,14 @@ package com.chimerapps.moorinspector.ui.settings
 
 import com.chimerapps.discovery.device.adb.ADBBootstrap
 import com.chimerapps.moorinspector.ui.InspectorSessionWindow
+import com.chimerapps.moorinspector.ui.InspectorToolWindow
 import com.chimerapps.moorinspector.ui.util.adb.ADBUtils
 import com.chimerapps.moorinspector.ui.util.localization.Tr
 import com.intellij.openapi.fileChooser.FileChooserDescriptor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
+import com.intellij.openapi.wm.WindowManager
 import com.intellij.ui.components.JBTextField
 import java.io.File
 import java.io.PrintWriter
@@ -24,8 +27,8 @@ class SettingsFormWrapper(private val moorInspectorSettings: MoorInspectorSettin
         get() = settingsForm.`$$$getRootComponent$$$`()
 
     val isModified: Boolean
-        get() = ((settingsForm.iDeviceField.textOrNull != (moorInspectorSettings.iDeviceBinariesPath))
-                || (settingsForm.adbField.textOrNull != (moorInspectorSettings.adbPath)))
+        get() = ((settingsForm.iDeviceField.textOrNull != (moorInspectorSettings.state.iDeviceBinariesPath))
+                || (settingsForm.adbField.textOrNull != (moorInspectorSettings.state.adbPath)))
 
     private var worker: VerifierWorker? = null
 
@@ -36,12 +39,14 @@ class SettingsFormWrapper(private val moorInspectorSettings: MoorInspectorSettin
     }
 
     fun save() {
-        settingsForm.iDeviceField.textOrNull?.let {
-            moorInspectorSettings.iDeviceBinariesPath = it
-        }
-        settingsForm.adbField.textOrNull?.let {
-            moorInspectorSettings.adbPath = it
-        }
+        moorInspectorSettings.state.iDeviceBinariesPath = settingsForm.iDeviceField.textOrNull
+        moorInspectorSettings.state.adbPath = settingsForm.adbField.textOrNull
+
+        val project = ProjectManager.getInstance().openProjects.firstOrNull { project ->
+            val window = WindowManager.getInstance().suggestParentWindow(project)
+            window != null && window.isActive
+        } ?: return
+        InspectorToolWindow.get(project)?.first?.redoADBBootstrapBlocking()
     }
 
     fun initUI(project: Project? = null) {
@@ -72,8 +77,8 @@ class SettingsFormWrapper(private val moorInspectorSettings: MoorInspectorSettin
     }
 
     fun reset() {
-        settingsForm.adbField.text = moorInspectorSettings.adbPath ?: ""
-        settingsForm.iDeviceField.text = moorInspectorSettings.iDeviceBinariesPath ?: ""
+        settingsForm.adbField.text = moorInspectorSettings.state.adbPath ?: ""
+        settingsForm.iDeviceField.text = moorInspectorSettings.state.iDeviceBinariesPath ?: ""
     }
 
     private fun runTest(project: Project?) {

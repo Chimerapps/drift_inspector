@@ -11,23 +11,27 @@ import com.intellij.util.xmlb.XmlSerializerUtil
 import com.intellij.util.xmlb.annotations.OptionTag
 
 @State(name = "MoorInspectorSettings", storages = [Storage("moorinspector.xml")])
-class MoorInspectorSettings : PersistentStateComponent<MoorInspectorSettings> {
+class MoorInspectorSettings : PersistentStateComponent<MoorInspectorSettingsData> {
 
     companion object {
         val instance: MoorInspectorSettings
             get() = ServiceManager.getService(MoorInspectorSettings::class.java)
     }
 
-    var adbPath: String? = null
-    var iDeviceBinariesPath: String? = null
+    private var settings: MoorInspectorSettingsData = MoorInspectorSettingsData()
 
-    override fun getState(): MoorInspectorSettings = this
+    override fun getState(): MoorInspectorSettingsData = settings
 
-    override fun loadState(state: MoorInspectorSettings) {
-        XmlSerializerUtil.copyBean(state, this)
+    override fun loadState(state: MoorInspectorSettingsData) {
+        settings = state
     }
 
 }
+
+data class MoorInspectorSettingsData(
+    var adbPath: String? = null,
+    var iDeviceBinariesPath: String? = null
+)
 
 @State(name = "MoorInspectorState", storages = [Storage("moorinspector.xml")], reloadable = true)
 class MoorProjectSettings : PersistentStateComponent<MoorInspectorState> {
