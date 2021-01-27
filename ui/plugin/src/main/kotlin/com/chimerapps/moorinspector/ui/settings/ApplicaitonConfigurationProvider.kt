@@ -9,7 +9,7 @@ class ApplicationConfigurationProvider : Configurable {
 
     override fun isModified(): Boolean = settingsForm?.isModified ?: false
 
-    override fun getDisplayName(): String = "Moor inspector"
+    override fun getDisplayName(): String = "Moor Inspector"
 
     override fun apply() {
         settingsForm?.save()

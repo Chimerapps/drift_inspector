@@ -100,7 +100,7 @@ class InspectorSessionWindow(
             6395,
             sessionIconProvider = ProjectSessionIconProvider.instance(project),
             configurePluginCallback = {
-                ShowSettingsUtil.getInstance().showSettingsDialog(project, "MoorInspectorRoot")
+                ShowSettingsUtil.getInstance().showSettingsDialog(project, "Moor Inspector")
                 toolWindow.adbInterface!! to IDeviceBootstrap(
                     File(
                         MoorInspectorSettings.instance.state.iDeviceBinariesPath ?: DEFAULT_IDEVICE_PATH
