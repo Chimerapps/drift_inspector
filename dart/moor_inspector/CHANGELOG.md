@@ -1,3 +1,7 @@
+## 0.2.0
+
+- Null safety release
+
 ## 0.2.0-nullsafety.0
 
 - Null safety has landed!
