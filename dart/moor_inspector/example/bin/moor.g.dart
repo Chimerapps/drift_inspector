@@ -15,14 +15,12 @@ class Category extends DataClass implements Insertable<Category> {
   factory Category.fromData(Map<String, dynamic> data, GeneratedDatabase db,
       {String? prefix}) {
     final effectivePrefix = prefix ?? '';
-    final intType = db.typeSystem.forDartType<int>();
-    final stringType = db.typeSystem.forDartType<String>();
-    final boolType = db.typeSystem.forDartType<bool>();
     return Category(
-      id: intType.mapFromDatabaseResponse(data['${effectivePrefix}id'])!,
-      description: stringType
+      id: const IntType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}id'])!,
+      description: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}description']),
-      exampleBool: boolType
+      exampleBool: const BoolType()
           .mapFromDatabaseResponse(data['${effectivePrefix}example_bool'])!,
     );
   }
@@ -86,7 +84,7 @@ class Category extends DataClass implements Insertable<Category> {
   int get hashCode => $mrjf(
       $mrjc(id.hashCode, $mrjc(description.hashCode, exampleBool.hashCode)));
   @override
-  bool operator ==(dynamic other) =>
+  bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Category &&
           other.id == this.id &&
@@ -161,45 +159,29 @@ class $CategoriesTable extends Categories
   final String? _alias;
   $CategoriesTable(this._db, [this._alias]);
   final VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedIntColumn id = _constructId();
-  GeneratedIntColumn _constructId() {
-    return GeneratedIntColumn('id', $tableName, false,
-        hasAutoIncrement: true, declaredAsPrimaryKey: true);
-  }
-
+  late final GeneratedColumn<int?> id = GeneratedColumn<int?>(
+      'id', aliasedName, false,
+      typeName: 'INTEGER',
+      requiredDuringInsert: false,
+      defaultConstraints: 'PRIMARY KEY AUTOINCREMENT');
   final VerificationMeta _descriptionMeta =
       const VerificationMeta('description');
-  @override
-  late final GeneratedTextColumn description = _constructDescription();
-  GeneratedTextColumn _constructDescription() {
-    return GeneratedTextColumn(
-      'description',
-      $tableName,
-      true,
-    );
-  }
-
+  late final GeneratedColumn<String?> description = GeneratedColumn<String?>(
+      'description', aliasedName, true,
+      typeName: 'TEXT', requiredDuringInsert: false);
   final VerificationMeta _exampleBoolMeta =
       const VerificationMeta('exampleBool');
-  @override
-  late final GeneratedBoolColumn exampleBool = _constructExampleBool();
-  GeneratedBoolColumn _constructExampleBool() {
-    return GeneratedBoolColumn(
-      'example_bool',
-      $tableName,
-      false,
-    );
-  }
-
+  late final GeneratedColumn<bool?> exampleBool = GeneratedColumn<bool?>(
+      'example_bool', aliasedName, false,
+      typeName: 'INTEGER',
+      requiredDuringInsert: true,
+      defaultConstraints: 'CHECK (example_bool IN (0, 1))');
   @override
   List<GeneratedColumn> get $columns => [id, description, exampleBool];
   @override
-  $CategoriesTable get asDslTable => this;
+  String get aliasedName => _alias ?? 'categories';
   @override
-  String get $tableName => _alias ?? 'categories';
-  @override
-  final String actualTableName = 'categories';
+  String get actualTableName => 'categories';
   @override
   VerificationContext validateIntegrity(Insertable<Category> instance,
       {bool isInserting = false}) {
@@ -229,8 +211,8 @@ class $CategoriesTable extends Categories
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
   Category map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : null;
-    return Category.fromData(data, _db, prefix: effectivePrefix);
+    return Category.fromData(data, _db,
+        prefix: tablePrefix != null ? '$tablePrefix.' : null);
   }
 
   @override
@@ -252,16 +234,15 @@ class Recipe extends DataClass implements Insertable<Recipe> {
   factory Recipe.fromData(Map<String, dynamic> data, GeneratedDatabase db,
       {String? prefix}) {
     final effectivePrefix = prefix ?? '';
-    final intType = db.typeSystem.forDartType<int>();
-    final stringType = db.typeSystem.forDartType<String>();
     return Recipe(
-      id: intType.mapFromDatabaseResponse(data['${effectivePrefix}id'])!,
-      title:
-          stringType.mapFromDatabaseResponse(data['${effectivePrefix}title'])!,
-      instructions: stringType
+      id: const IntType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}id'])!,
+      title: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}title'])!,
+      instructions: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}instructions'])!,
-      category:
-          intType.mapFromDatabaseResponse(data['${effectivePrefix}category']),
+      category: const IntType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}category']),
     );
   }
   @override
@@ -331,7 +312,7 @@ class Recipe extends DataClass implements Insertable<Recipe> {
   int get hashCode => $mrjf($mrjc(id.hashCode,
       $mrjc(title.hashCode, $mrjc(instructions.hashCode, category.hashCode))));
   @override
-  bool operator ==(dynamic other) =>
+  bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Recipe &&
           other.id == this.id &&
@@ -420,51 +401,32 @@ class $RecipesTable extends Recipes with TableInfo<$RecipesTable, Recipe> {
   final String? _alias;
   $RecipesTable(this._db, [this._alias]);
   final VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedIntColumn id = _constructId();
-  GeneratedIntColumn _constructId() {
-    return GeneratedIntColumn('id', $tableName, false,
-        hasAutoIncrement: true, declaredAsPrimaryKey: true);
-  }
-
+  late final GeneratedColumn<int?> id = GeneratedColumn<int?>(
+      'id', aliasedName, false,
+      typeName: 'INTEGER',
+      requiredDuringInsert: false,
+      defaultConstraints: 'PRIMARY KEY AUTOINCREMENT');
   final VerificationMeta _titleMeta = const VerificationMeta('title');
-  @override
-  late final GeneratedTextColumn title = _constructTitle();
-  GeneratedTextColumn _constructTitle() {
-    return GeneratedTextColumn('title', $tableName, false, maxTextLength: 16);
-  }
-
+  late final GeneratedColumn<String?> title = GeneratedColumn<String?>(
+      'title', aliasedName, false,
+      additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 16),
+      typeName: 'TEXT',
+      requiredDuringInsert: true);
   final VerificationMeta _instructionsMeta =
       const VerificationMeta('instructions');
-  @override
-  late final GeneratedTextColumn instructions = _constructInstructions();
-  GeneratedTextColumn _constructInstructions() {
-    return GeneratedTextColumn(
-      'instructions',
-      $tableName,
-      false,
-    );
-  }
-
+  late final GeneratedColumn<String?> instructions = GeneratedColumn<String?>(
+      'instructions', aliasedName, false,
+      typeName: 'TEXT', requiredDuringInsert: true);
   final VerificationMeta _categoryMeta = const VerificationMeta('category');
-  @override
-  late final GeneratedIntColumn category = _constructCategory();
-  GeneratedIntColumn _constructCategory() {
-    return GeneratedIntColumn(
-      'category',
-      $tableName,
-      true,
-    );
-  }
-
+  late final GeneratedColumn<int?> category = GeneratedColumn<int?>(
+      'category', aliasedName, true,
+      typeName: 'INTEGER', requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [id, title, instructions, category];
   @override
-  $RecipesTable get asDslTable => this;
+  String get aliasedName => _alias ?? 'recipes';
   @override
-  String get $tableName => _alias ?? 'recipes';
-  @override
-  final String actualTableName = 'recipes';
+  String get actualTableName => 'recipes';
   @override
   VerificationContext validateIntegrity(Insertable<Recipe> instance,
       {bool isInserting = false}) {
@@ -498,8 +460,8 @@ class $RecipesTable extends Recipes with TableInfo<$RecipesTable, Recipe> {
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
   Recipe map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : null;
-    return Recipe.fromData(data, _db, prefix: effectivePrefix);
+    return Recipe.fromData(data, _db,
+        prefix: tablePrefix != null ? '$tablePrefix.' : null);
   }
 
   @override
@@ -517,13 +479,13 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
   factory Ingredient.fromData(Map<String, dynamic> data, GeneratedDatabase db,
       {String? prefix}) {
     final effectivePrefix = prefix ?? '';
-    final intType = db.typeSystem.forDartType<int>();
-    final stringType = db.typeSystem.forDartType<String>();
     return Ingredient(
-      id: intType.mapFromDatabaseResponse(data['${effectivePrefix}id'])!,
-      name: stringType.mapFromDatabaseResponse(data['${effectivePrefix}name'])!,
-      caloriesPer100g:
-          intType.mapFromDatabaseResponse(data['${effectivePrefix}calories'])!,
+      id: const IntType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}id'])!,
+      name: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}name'])!,
+      caloriesPer100g: const IntType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}calories'])!,
     );
   }
   @override
@@ -582,7 +544,7 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
   int get hashCode =>
       $mrjf($mrjc(id.hashCode, $mrjc(name.hashCode, caloriesPer100g.hashCode)));
   @override
-  bool operator ==(dynamic other) =>
+  bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Ingredient &&
           other.id == this.id &&
@@ -603,7 +565,7 @@ class IngredientsCompanion extends UpdateCompanion<Ingredient> {
     this.id = const Value.absent(),
     required String name,
     required int caloriesPer100g,
-  })   : name = Value(name),
+  })  : name = Value(name),
         caloriesPer100g = Value(caloriesPer100g);
   static Insertable<Ingredient> custom({
     Expression<int>? id,
@@ -658,44 +620,26 @@ class $IngredientsTable extends Ingredients
   final String? _alias;
   $IngredientsTable(this._db, [this._alias]);
   final VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedIntColumn id = _constructId();
-  GeneratedIntColumn _constructId() {
-    return GeneratedIntColumn('id', $tableName, false,
-        hasAutoIncrement: true, declaredAsPrimaryKey: true);
-  }
-
+  late final GeneratedColumn<int?> id = GeneratedColumn<int?>(
+      'id', aliasedName, false,
+      typeName: 'INTEGER',
+      requiredDuringInsert: false,
+      defaultConstraints: 'PRIMARY KEY AUTOINCREMENT');
   final VerificationMeta _nameMeta = const VerificationMeta('name');
-  @override
-  late final GeneratedTextColumn name = _constructName();
-  GeneratedTextColumn _constructName() {
-    return GeneratedTextColumn(
-      'name',
-      $tableName,
-      false,
-    );
-  }
-
+  late final GeneratedColumn<String?> name = GeneratedColumn<String?>(
+      'name', aliasedName, false,
+      typeName: 'TEXT', requiredDuringInsert: true);
   final VerificationMeta _caloriesPer100gMeta =
       const VerificationMeta('caloriesPer100g');
-  @override
-  late final GeneratedIntColumn caloriesPer100g = _constructCaloriesPer100g();
-  GeneratedIntColumn _constructCaloriesPer100g() {
-    return GeneratedIntColumn(
-      'calories',
-      $tableName,
-      false,
-    );
-  }
-
+  late final GeneratedColumn<int?> caloriesPer100g = GeneratedColumn<int?>(
+      'calories', aliasedName, false,
+      typeName: 'INTEGER', requiredDuringInsert: true);
   @override
   List<GeneratedColumn> get $columns => [id, name, caloriesPer100g];
   @override
-  $IngredientsTable get asDslTable => this;
+  String get aliasedName => _alias ?? 'ingredients';
   @override
-  String get $tableName => _alias ?? 'ingredients';
-  @override
-  final String actualTableName = 'ingredients';
+  String get actualTableName => 'ingredients';
   @override
   VerificationContext validateIntegrity(Insertable<Ingredient> instance,
       {bool isInserting = false}) {
@@ -725,8 +669,8 @@ class $IngredientsTable extends Ingredients
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
   Ingredient map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : null;
-    return Ingredient.fromData(data, _db, prefix: effectivePrefix);
+    return Ingredient.fromData(data, _db,
+        prefix: tablePrefix != null ? '$tablePrefix.' : null);
   }
 
   @override
@@ -748,14 +692,13 @@ class IngredientInRecipe extends DataClass
       Map<String, dynamic> data, GeneratedDatabase db,
       {String? prefix}) {
     final effectivePrefix = prefix ?? '';
-    final intType = db.typeSystem.forDartType<int>();
     return IngredientInRecipe(
-      recipe:
-          intType.mapFromDatabaseResponse(data['${effectivePrefix}recipe'])!,
-      ingredient: intType
+      recipe: const IntType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}recipe'])!,
+      ingredient: const IntType()
           .mapFromDatabaseResponse(data['${effectivePrefix}ingredient'])!,
-      amountInGrams:
-          intType.mapFromDatabaseResponse(data['${effectivePrefix}amount'])!,
+      amountInGrams: const IntType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}amount'])!,
     );
   }
   @override
@@ -815,7 +758,7 @@ class IngredientInRecipe extends DataClass
   int get hashCode => $mrjf($mrjc(
       recipe.hashCode, $mrjc(ingredient.hashCode, amountInGrams.hashCode)));
   @override
-  bool operator ==(dynamic other) =>
+  bool operator ==(Object other) =>
       identical(this, other) ||
       (other is IngredientInRecipe &&
           other.recipe == this.recipe &&
@@ -836,7 +779,7 @@ class IngredientInRecipesCompanion extends UpdateCompanion<IngredientInRecipe> {
     required int recipe,
     required int ingredient,
     required int amountInGrams,
-  })   : recipe = Value(recipe),
+  })  : recipe = Value(recipe),
         ingredient = Value(ingredient),
         amountInGrams = Value(amountInGrams);
   static Insertable<IngredientInRecipe> custom({
@@ -892,47 +835,24 @@ class $IngredientInRecipesTable extends IngredientInRecipes
   final String? _alias;
   $IngredientInRecipesTable(this._db, [this._alias]);
   final VerificationMeta _recipeMeta = const VerificationMeta('recipe');
-  @override
-  late final GeneratedIntColumn recipe = _constructRecipe();
-  GeneratedIntColumn _constructRecipe() {
-    return GeneratedIntColumn(
-      'recipe',
-      $tableName,
-      false,
-    );
-  }
-
+  late final GeneratedColumn<int?> recipe = GeneratedColumn<int?>(
+      'recipe', aliasedName, false,
+      typeName: 'INTEGER', requiredDuringInsert: true);
   final VerificationMeta _ingredientMeta = const VerificationMeta('ingredient');
-  @override
-  late final GeneratedIntColumn ingredient = _constructIngredient();
-  GeneratedIntColumn _constructIngredient() {
-    return GeneratedIntColumn(
-      'ingredient',
-      $tableName,
-      false,
-    );
-  }
-
+  late final GeneratedColumn<int?> ingredient = GeneratedColumn<int?>(
+      'ingredient', aliasedName, false,
+      typeName: 'INTEGER', requiredDuringInsert: true);
   final VerificationMeta _amountInGramsMeta =
       const VerificationMeta('amountInGrams');
-  @override
-  late final GeneratedIntColumn amountInGrams = _constructAmountInGrams();
-  GeneratedIntColumn _constructAmountInGrams() {
-    return GeneratedIntColumn(
-      'amount',
-      $tableName,
-      false,
-    );
-  }
-
+  late final GeneratedColumn<int?> amountInGrams = GeneratedColumn<int?>(
+      'amount', aliasedName, false,
+      typeName: 'INTEGER', requiredDuringInsert: true);
   @override
   List<GeneratedColumn> get $columns => [recipe, ingredient, amountInGrams];
   @override
-  $IngredientInRecipesTable get asDslTable => this;
+  String get aliasedName => _alias ?? 'recipe_ingredients';
   @override
-  String get $tableName => _alias ?? 'recipe_ingredients';
-  @override
-  final String actualTableName = 'recipe_ingredients';
+  String get actualTableName => 'recipe_ingredients';
   @override
   VerificationContext validateIntegrity(Insertable<IngredientInRecipe> instance,
       {bool isInserting = false}) {
@@ -967,8 +887,8 @@ class $IngredientInRecipesTable extends IngredientInRecipes
   Set<GeneratedColumn> get $primaryKey => {recipe, ingredient};
   @override
   IngredientInRecipe map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : null;
-    return IngredientInRecipe.fromData(data, _db, prefix: effectivePrefix);
+    return IngredientInRecipe.fromData(data, _db,
+        prefix: tablePrefix != null ? '$tablePrefix.' : null);
   }
 
   @override
@@ -989,10 +909,13 @@ abstract class _$Database extends GeneratedDatabase {
     return customSelect(
         'SELECT r.title, SUM(ir.amount) AS total_weight\n        FROM recipes r\n        INNER JOIN recipe_ingredients ir ON ir.recipe = r.id\n      GROUP BY r.id',
         variables: [],
-        readsFrom: {recipes, ingredientInRecipes}).map((QueryRow row) {
+        readsFrom: {
+          recipes,
+          ingredientInRecipes,
+        }).map((QueryRow row) {
       return TotalWeightResult(
-        title: row.readString('title'),
-        totalWeight: row.readInt('total_weight'),
+        title: row.read<String>('title'),
+        totalWeight: row.read<int>('total_weight'),
       );
     });
   }
