@@ -89,7 +89,8 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
     wrapper['type'] = 'serverInfo';
     wrapper['body'] = jsonObject;
 
-    _serverIdData = utf8.encode(json.encode(wrapper));
+    final asJson = json.encode(wrapper);
+    _serverIdData = utf8.encode(asJson);
   }
 
   Map<String, dynamic> _buildTableModel(
@@ -113,15 +114,13 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
         final columnData = Map<String, dynamic>();
 
         columnData['name'] = column.$name;
-        columnData['isRequired'] = column.isRequired;
+        columnData['isRequired'] = column.requiredDuringInsert;
         columnData['type'] = column.typeName;
         columnData['nullable'] = column.$nullable;
-        if (column is GeneratedIntColumn) {
-          columnData['autoIncrement'] = column.hasAutoIncrement;
-        } else if (column is GeneratedTextColumn) {
-          columnData['minTextLength'] = column.minTextLength;
-          columnData['maxTextLength'] = column.maxTextLength;
-        } else if (column is GeneratedBoolColumn) {
+        columnData['autoIncrement'] = column.hasAutoIncrement;
+
+        if (column is GeneratedColumn<bool> ||
+            column is GeneratedColumn<bool?>) {
           columnData['isBoolean'] = true;
         }
 
@@ -277,7 +276,8 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
     wrapper['type'] = 'exportResult';
     wrapper['body'] = jsonData;
 
-    return utf8.encode(json.encode(wrapper));
+    final asJson = json.encode(wrapper);
+    return utf8.encode(asJson);
   }
 
   List<String> _createSchema(
@@ -315,13 +315,13 @@ class MoorInspectorException implements Exception {
 }
 
 void _createTableStatement(TableInfo table, GenerationContext context) {
-  context.buffer.write('CREATE TABLE IF NOT EXISTS ${table.$tableName} (');
+  context.buffer.write('CREATE TABLE IF NOT EXISTS ${table.aliasedName} (');
 
   var hasAutoIncrement = false;
   for (var i = 0; i < table.$columns.length; i++) {
     final column = table.$columns[i];
 
-    if (column is GeneratedIntColumn && column.hasAutoIncrement) {
+    if (column.hasAutoIncrement) {
       hasAutoIncrement = true;
     }
 

@@ -241,3 +241,5 @@ gradle-app.setting
 **/build/
 
 # End of https://www.toptal.com/developers/gitignore/api/dart,gradle,git,osx,windows,intellij+all,kotlin,java
+
+ui/test.db

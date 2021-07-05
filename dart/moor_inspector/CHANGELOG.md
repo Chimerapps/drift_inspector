@@ -1,3 +1,13 @@
+## 0.3.1
+
+- Remove debug print
+
+## 0.3.0
+
+- Support for moor 4.4.0.
+
+  **Note:** For flutter you need to check if supported version of moor has been upgraded to `^4.4.0`
+
 ## 0.2.0
 
 - Null safety release
