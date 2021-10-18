@@ -6,7 +6,7 @@ import java.util.ResourceBundle
 
 object Localization {
 
-    private val bundle = ResourceBundle.getBundle("/translations/translations", Locale.getDefault())
+    private val bundle = ResourceBundle.getBundle("translations/translations", Locale.getDefault())
 
     fun getString(key: String): String {
         return StringEscapeUtils.unescapeJava(bundle.getString(key))

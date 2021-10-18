@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>com.chimerapps.moorinspector</id>
     <name>Database Inspector</name>
-    <version>0.1.5</version>
+    <version>0.1.6</version>
     <vendor email="support@chimerapps.com" url="https://github.com/Chimerapps">chimerapps</vendor>
 
     <description>This plugin enables the moor inspector ui inside the IDE. Use the moor_inspector dart/flutter library
@@ -11,7 +11,15 @@
 
     <change-notes><![CDATA[
         <p>
-            <b>0.1.4</b>
+            <b>0.1.6</b>
+            Note that this is the last version of this plugin before it migrates to either 'drift' (the new name of the moor package)
+            or a different name altogether where we support more than just databases
+            <ul>
+                <li>Fixed loading translations causing a intelliJ error</li>
+            </ul>
+        </p>
+        <p>
+            <b>0.1.5</b>
             <ul>
                 <li>Fixed 'Open settings' not opening correct settings</li>
             </ul>
