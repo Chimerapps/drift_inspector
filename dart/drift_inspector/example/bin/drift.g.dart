@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'moor.dart';
+part of 'drift.dart';
 
 // **************************************************************************
 // MoorGenerator
@@ -12,8 +12,7 @@ class Category extends DataClass implements Insertable<Category> {
   final String? description;
   final bool exampleBool;
   Category({required this.id, this.description, required this.exampleBool});
-  factory Category.fromData(Map<String, dynamic> data, GeneratedDatabase db,
-      {String? prefix}) {
+  factory Category.fromData(Map<String, dynamic> data, {String? prefix}) {
     final effectivePrefix = prefix ?? '';
     return Category(
       id: const IntType()
@@ -47,7 +46,7 @@ class Category extends DataClass implements Insertable<Category> {
 
   factory Category.fromJson(Map<String, dynamic> json,
       {ValueSerializer? serializer}) {
-    serializer ??= moorRuntimeOptions.defaultSerializer;
+    serializer ??= driftRuntimeOptions.defaultSerializer;
     return Category(
       id: serializer.fromJson<int>(json['id']),
       description: serializer.fromJson<String?>(json['description']),
@@ -56,7 +55,7 @@ class Category extends DataClass implements Insertable<Category> {
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= moorRuntimeOptions.defaultSerializer;
+    serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'description': serializer.toJson<String?>(description),
@@ -81,8 +80,7 @@ class Category extends DataClass implements Insertable<Category> {
   }
 
   @override
-  int get hashCode => $mrjf(
-      $mrjc(id.hashCode, $mrjc(description.hashCode, exampleBool.hashCode)));
+  int get hashCode => Object.hash(id, description, exampleBool);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -211,7 +209,7 @@ class $CategoriesTable extends Categories
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
   Category map(Map<String, dynamic> data, {String? tablePrefix}) {
-    return Category.fromData(data, _db,
+    return Category.fromData(data,
         prefix: tablePrefix != null ? '$tablePrefix.' : null);
   }
 
@@ -231,8 +229,7 @@ class Recipe extends DataClass implements Insertable<Recipe> {
       required this.title,
       required this.instructions,
       this.category});
-  factory Recipe.fromData(Map<String, dynamic> data, GeneratedDatabase db,
-      {String? prefix}) {
+  factory Recipe.fromData(Map<String, dynamic> data, {String? prefix}) {
     final effectivePrefix = prefix ?? '';
     return Recipe(
       id: const IntType()
@@ -270,7 +267,7 @@ class Recipe extends DataClass implements Insertable<Recipe> {
 
   factory Recipe.fromJson(Map<String, dynamic> json,
       {ValueSerializer? serializer}) {
-    serializer ??= moorRuntimeOptions.defaultSerializer;
+    serializer ??= driftRuntimeOptions.defaultSerializer;
     return Recipe(
       id: serializer.fromJson<int>(json['id']),
       title: serializer.fromJson<String>(json['title']),
@@ -280,7 +277,7 @@ class Recipe extends DataClass implements Insertable<Recipe> {
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= moorRuntimeOptions.defaultSerializer;
+    serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'title': serializer.toJson<String>(title),
@@ -309,8 +306,7 @@ class Recipe extends DataClass implements Insertable<Recipe> {
   }
 
   @override
-  int get hashCode => $mrjf($mrjc(id.hashCode,
-      $mrjc(title.hashCode, $mrjc(instructions.hashCode, category.hashCode))));
+  int get hashCode => Object.hash(id, title, instructions, category);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -460,7 +456,7 @@ class $RecipesTable extends Recipes with TableInfo<$RecipesTable, Recipe> {
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
   Recipe map(Map<String, dynamic> data, {String? tablePrefix}) {
-    return Recipe.fromData(data, _db,
+    return Recipe.fromData(data,
         prefix: tablePrefix != null ? '$tablePrefix.' : null);
   }
 
@@ -476,8 +472,7 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
   final int caloriesPer100g;
   Ingredient(
       {required this.id, required this.name, required this.caloriesPer100g});
-  factory Ingredient.fromData(Map<String, dynamic> data, GeneratedDatabase db,
-      {String? prefix}) {
+  factory Ingredient.fromData(Map<String, dynamic> data, {String? prefix}) {
     final effectivePrefix = prefix ?? '';
     return Ingredient(
       id: const IntType()
@@ -507,7 +502,7 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
 
   factory Ingredient.fromJson(Map<String, dynamic> json,
       {ValueSerializer? serializer}) {
-    serializer ??= moorRuntimeOptions.defaultSerializer;
+    serializer ??= driftRuntimeOptions.defaultSerializer;
     return Ingredient(
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
@@ -516,7 +511,7 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= moorRuntimeOptions.defaultSerializer;
+    serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
@@ -541,8 +536,7 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
   }
 
   @override
-  int get hashCode =>
-      $mrjf($mrjc(id.hashCode, $mrjc(name.hashCode, caloriesPer100g.hashCode)));
+  int get hashCode => Object.hash(id, name, caloriesPer100g);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -669,7 +663,7 @@ class $IngredientsTable extends Ingredients
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
   Ingredient map(Map<String, dynamic> data, {String? tablePrefix}) {
-    return Ingredient.fromData(data, _db,
+    return Ingredient.fromData(data,
         prefix: tablePrefix != null ? '$tablePrefix.' : null);
   }
 
@@ -688,8 +682,7 @@ class IngredientInRecipe extends DataClass
       {required this.recipe,
       required this.ingredient,
       required this.amountInGrams});
-  factory IngredientInRecipe.fromData(
-      Map<String, dynamic> data, GeneratedDatabase db,
+  factory IngredientInRecipe.fromData(Map<String, dynamic> data,
       {String? prefix}) {
     final effectivePrefix = prefix ?? '';
     return IngredientInRecipe(
@@ -720,7 +713,7 @@ class IngredientInRecipe extends DataClass
 
   factory IngredientInRecipe.fromJson(Map<String, dynamic> json,
       {ValueSerializer? serializer}) {
-    serializer ??= moorRuntimeOptions.defaultSerializer;
+    serializer ??= driftRuntimeOptions.defaultSerializer;
     return IngredientInRecipe(
       recipe: serializer.fromJson<int>(json['recipe']),
       ingredient: serializer.fromJson<int>(json['ingredient']),
@@ -729,7 +722,7 @@ class IngredientInRecipe extends DataClass
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= moorRuntimeOptions.defaultSerializer;
+    serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'recipe': serializer.toJson<int>(recipe),
       'ingredient': serializer.toJson<int>(ingredient),
@@ -755,8 +748,7 @@ class IngredientInRecipe extends DataClass
   }
 
   @override
-  int get hashCode => $mrjf($mrjc(
-      recipe.hashCode, $mrjc(ingredient.hashCode, amountInGrams.hashCode)));
+  int get hashCode => Object.hash(recipe, ingredient, amountInGrams);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -887,7 +879,7 @@ class $IngredientInRecipesTable extends IngredientInRecipes
   Set<GeneratedColumn> get $primaryKey => {recipe, ingredient};
   @override
   IngredientInRecipe map(Map<String, dynamic> data, {String? tablePrefix}) {
-    return IngredientInRecipe.fromData(data, _db,
+    return IngredientInRecipe.fromData(data,
         prefix: tablePrefix != null ? '$tablePrefix.' : null);
   }
 
@@ -897,14 +889,14 @@ class $IngredientInRecipesTable extends IngredientInRecipes
   }
 }
 
-abstract class _$Database extends GeneratedDatabase {
-  _$Database(QueryExecutor e) : super(SqlTypeSystem.defaultInstance, e);
+abstract class _$MyDatabase extends GeneratedDatabase {
+  _$MyDatabase(QueryExecutor e) : super(SqlTypeSystem.defaultInstance, e);
   late final $CategoriesTable categories = $CategoriesTable(this);
   late final $RecipesTable recipes = $RecipesTable(this);
   late final $IngredientsTable ingredients = $IngredientsTable(this);
   late final $IngredientInRecipesTable ingredientInRecipes =
       $IngredientInRecipesTable(this);
-  late final ExampleDao exampleDao = ExampleDao(this as Database);
+  late final ExampleDao exampleDao = ExampleDao(this as MyDatabase);
   Selectable<TotalWeightResult> totalWeight() {
     return customSelect(
         'SELECT r.title, SUM(ir.amount) AS total_weight\n        FROM recipes r\n        INNER JOIN recipe_ingredients ir ON ir.recipe = r.id\n      GROUP BY r.id',
@@ -940,7 +932,7 @@ class TotalWeightResult {
 // DaoGenerator
 // **************************************************************************
 
-mixin _$ExampleDaoMixin on DatabaseAccessor<Database> {
+mixin _$ExampleDaoMixin on DatabaseAccessor<MyDatabase> {
   $IngredientsTable get ingredients => attachedDatabase.ingredients;
   $CategoriesTable get categories => attachedDatabase.categories;
   $RecipesTable get recipes => attachedDatabase.recipes;

@@ -1,26 +1,26 @@
-import 'package:moor/ffi.dart';
-import 'package:moor_inspector/moor_inspector.dart';
+import 'package:drift/native.dart';
+import 'package:drift_inspector/drift_inspector.dart';
 
-import 'moor.dart';
+import 'drift.dart';
 
 Future<void> main(List<String> arguments) async {
-  final database = Database(VmDatabase.memory());
+  final database = MyDatabase(NativeDatabase.memory());
 
-  final moorInspectorBuilder = MoorInspectorBuilder()
+  final driftInspectorBuilder = DriftInspectorBuilder()
     ..bundleId = 'com.example.text'
     ..icon = 'flutter'
     ..addDatabase('example', database);
 
   await _populateDatabase(database);
 
-  final inspector = moorInspectorBuilder.build();
+  final inspector = driftInspectorBuilder.build();
 
-  print('Starting moor inspector');
+  print('Starting drift inspector');
   await inspector.start();
 
   const waitDuration = Duration(seconds: 1000000);
 
-  print('Asking moor inspector to wait for $waitDuration');
+  print('Asking drift inspector to wait for $waitDuration');
   await Future.delayed(waitDuration);
 
   print('Stopping inspector');
@@ -29,7 +29,7 @@ Future<void> main(List<String> arguments) async {
   print('Inspector stopped');
 }
 
-Future<void> _populateDatabase(Database database) async {
+Future<void> _populateDatabase(MyDatabase database) async {
   await database.exampleDao.replaceRecipes([
     Recipe(id: 1, title: 'Recipe 1', instructions: 'Instructions 1'),
     Recipe(id: 2, title: 'Recipe 2', instructions: 'Instructions 2'),

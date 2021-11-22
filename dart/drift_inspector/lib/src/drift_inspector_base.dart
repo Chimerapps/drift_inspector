@@ -1,9 +1,9 @@
-import 'package:moor/moor.dart';
-import 'package:moor_inspector/src/moor_inspector_driver.dart';
-import 'package:moor_inspector/src/uuid.dart';
+import 'package:drift/drift.dart';
+import 'package:drift_inspector/src/drift_inspector_driver.dart';
+import 'package:uuid/uuid.dart';
 
-///Builder for the moor inspector
-class MoorInspectorBuilder {
+///Builder for the drift inspector
+class DriftInspectorBuilder {
   final _databases = <DatabaseHolder>[];
 
   /// The icon to use for this server, rendered in the plugin. Eg: flutter for the built-in flutter icon
@@ -15,30 +15,30 @@ class MoorInspectorBuilder {
   /// The port the inspector must run on, use 0 (default) to let the server choose an open port. The server announcement manager will expose the system port
   int port = 0;
 
-  /// Adds the moor [database] to the inspector. The [name] parameter is used in the plugin to display the [database]
+  /// Adds the drift [database] to the inspector. The [name] parameter is used in the plugin to display the [database]
   void addDatabase(String name, GeneratedDatabase database) {
-    _databases.add(DatabaseHolder(name, SimpleUUID.uuid(), database));
+    _databases.add(DatabaseHolder(name, const Uuid().v4(), database));
   }
 
-  /// Builds the moor inspector
-  MoorInspector build() {
+  /// Builds the drift inspector
+  DriftInspector build() {
     if (bundleId == null) {
       throw ArgumentError('bundleId must not be null!');
     }
-    return MoorInspector._(port, bundleId!, icon, _databases);
+    return DriftInspector._(port, bundleId!, icon, _databases);
   }
 }
 
-/// Moor inspector base. Use the [start] and [stop] methods to start and stop the internal server
-class MoorInspector {
-  final MooreInspectorDriver _driver;
+/// Drift inspector base. Use the [start] and [stop] methods to start and stop the internal server
+class DriftInspector {
+  final DrifteInspectorDriver _driver;
 
-  MoorInspector._(
+  DriftInspector._(
     int port,
     String bundleId,
     String? icon,
     List<DatabaseHolder> databases,
-  ) : _driver = MooreInspectorDriver(
+  ) : _driver = DrifteInspectorDriver(
           databases,
           bundleId,
           icon,

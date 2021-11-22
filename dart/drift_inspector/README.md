@@ -1,27 +1,27 @@
-Moor inspector dart library
+Drift inspector dart library
 
-Helper library for moor databases, enables the moor inspector intellij plugin to inspect and edit your moor databases during development
+Helper library for drift databases, enables the drift inspector intellij plugin to inspect and edit your drift databases during development
 
-Requires the moor inspector plugin from the intellij marketplace to work.
+Requires the database inspector plugin from the intellij marketplace to work.
 
-Download plugin [here](https://plugins.jetbrains.com/plugin/15364-moor-inspector)
+Download plugin [here](https://plugins.jetbrains.com/plugin/15364-database-inspector/)
  
 ## Usage
 
 A simple usage example:
 
 ```dart
-import 'package:moor_inspector/moor_inspector.dart';
-import 'moor.dart';
+import 'package:drift_inspector/drift_inspector.dart';
+import 'drift.dart';
 
 main() async {
-  final database = Database(...); //Generated moor database
+  final database = Database(...); //Generated drift database
   
-  final moorInspectorBuilder = MoorInspectorBuilder()
+  final driftInspectorBuilder = DriftInspectorBuilder()
       ..bundleId = 'com.example.text'
       ..icon = 'flutter'
       ..addDatabase('example', database);
-  final inspector = moorInspectorBuilder.build();
+  final inspector = driftInspectorBuilder.build();
   
   //Start server and announcement server
   await inspector.start();
@@ -41,4 +41,4 @@ Due to some architectural differences (most notably lack of dart:io support), di
 
 Please file feature requests and bugs at the [issue tracker][tracker].
 
-[tracker]: https://github.com/Chimerapps/moor_inspector
+[tracker]: https://github.com/Chimerapps/drift_inspector

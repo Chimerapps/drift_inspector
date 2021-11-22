@@ -1,5 +1,5 @@
 def versions = [
-        kotlin            : '1.4.10',
+        kotlin            : '1.5.31',
         websocket         : '1.5.1',
         intelliJPlugin    : '0.4.8',
         minIntelliJ       : '2018.2',

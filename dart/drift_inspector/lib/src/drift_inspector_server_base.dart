@@ -1,4 +1,4 @@
-abstract class MoorInspectorServer {
+abstract class DriftInspectorServer {
   ///The port the tooling server is running on
   int get port;
 
@@ -11,7 +11,7 @@ abstract class MoorInspectorServer {
 
 // ignore: one_member_abstracts
 abstract class ConnectionListener {
-  void onNewConnection(MooreInspectorConnection connection);
+  void onNewConnection(DrifteInspectorConnection connection);
 
   Future<List<int>> filterTable(
     String databaseId,
@@ -37,7 +37,7 @@ abstract class ConnectionListener {
   );
 }
 
-abstract class MooreInspectorConnection {
+abstract class DrifteInspectorConnection {
   void sendMessageUTF8(List<int> data);
 
   void close();

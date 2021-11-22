@@ -3,20 +3,20 @@ import 'dart:io';
 
 import 'package:synchronized/synchronized.dart';
 
-import 'moor_inspector_server_base.dart';
+import 'drift_inspector_server_base.dart';
 
-MoorInspectorServer createServer(int port) => _MooreInspectorServerImpl(port);
+DriftInspectorServer createServer(int port) => _DrifteInspectorServerImpl(port);
 
-class _MooreInspectorServerImpl extends MoorInspectorServer {
+class _DrifteInspectorServerImpl extends DriftInspectorServer {
   HttpServer? _server;
   final int _port;
-  final _connections = <MooreInspectorConnection>[];
+  final _connections = <DrifteInspectorConnection>[];
   final _lock = Lock();
 
   @override
   int get port => _server?.port ?? -1;
 
-  _MooreInspectorServerImpl(this._port);
+  _DrifteInspectorServerImpl(this._port);
 
   /// Starts the server
   @override
@@ -32,13 +32,17 @@ class _MooreInspectorServerImpl extends MoorInspectorServer {
     await _server?.close(force: true);
     _server = null;
     await _lock.synchronized(() async {
-      _connections.forEach((socket) => socket.close());
+      for (final socket in _connections) {
+        try {
+          socket.close();
+        } catch (_) {}
+      }
     });
   }
 
   void _onNewConnection(WebSocket socket) {
     final connection =
-        _MooreInspectorConnectionImpl(socket, connectionListener);
+        _DrifteInspectorConnectionImpl(socket, connectionListener);
     _lock.synchronized(() async {
       _connections.add(connection);
       socket.listen(
@@ -52,23 +56,23 @@ class _MooreInspectorServerImpl extends MoorInspectorServer {
     connection.onConnectionReady();
   }
 
-  void _onSocketClosed(MooreInspectorConnection socket) {
+  void _onSocketClosed(DrifteInspectorConnection socket) {
     _lock.synchronized(() async {
       _connections.remove(socket);
     });
   }
 }
 
-class _MooreInspectorConnectionImpl extends MooreInspectorConnection {
-  static const _MESSAGE_FILTER = 'filter';
-  static const _MESSAGE_UPDATE = 'update';
-  static const _MESSAGE_BATCH = 'batch';
-  static const _MESSAGE_EXPORT = 'export';
+class _DrifteInspectorConnectionImpl extends DrifteInspectorConnection {
+  static const _messageFilter = 'filter';
+  static const _messageUpdate = 'update';
+  static const _messageBatch = 'batch';
+  static const _messageExport = 'export';
 
   final WebSocket _socket;
   final ConnectionListener _listener;
 
-  _MooreInspectorConnectionImpl(this._socket, this._listener);
+  _DrifteInspectorConnectionImpl(this._socket, this._listener);
 
   void onConnectionReady() {
     _listener.onNewConnection(this);
@@ -94,13 +98,13 @@ class _MooreInspectorConnectionImpl extends MooreInspectorConnection {
   Future<void> _handleType(String type, Map<String, dynamic> body,
       {required bool sendResponse}) {
     switch (type) {
-      case _MESSAGE_FILTER:
+      case _messageFilter:
         return _handleFilterRequest(body, sendResponse);
-      case _MESSAGE_UPDATE:
+      case _messageUpdate:
         return _handleUpdateRequest(body, sendResponse);
-      case _MESSAGE_BATCH:
+      case _messageBatch:
         return _handleBulkRequest(body, sendResponse);
-      case _MESSAGE_EXPORT:
+      case _messageExport:
         return _handleExport(body);
     }
     return Future.value();
@@ -155,7 +159,7 @@ class _MooreInspectorConnectionImpl extends MooreInspectorConnection {
     final requestId = parsedJson['requestId'] as String;
 
     Exception? lastException;
-    actions.forEach((action) async {
+    for (final action in actions) {
       final actionInternal = action as Map<String, dynamic>;
       final type = actionInternal['type'] as String;
       final body = actionInternal['body'] as Map<String, dynamic>;
@@ -165,7 +169,7 @@ class _MooreInspectorConnectionImpl extends MooreInspectorConnection {
       } on Exception catch (e) {
         lastException = e;
       }
-    });
+    }
     if (sendResponse) {
       if (lastException != null) {
         final wrapper = {

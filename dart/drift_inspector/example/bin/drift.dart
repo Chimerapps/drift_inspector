@@ -1,6 +1,6 @@
-import 'package:moor/moor.dart';
+import 'package:drift/drift.dart';
 
-part 'moor.g.dart';
+part 'drift.g.dart';
 
 @DataClassName('Category')
 class Categories extends Table {
@@ -44,9 +44,9 @@ class IngredientInRecipes extends Table {
   IntColumn get amountInGrams => integer().named('amount')();
 }
 
-@UseDao(tables: [Ingredients, Categories, Recipes, IngredientInRecipes])
-class ExampleDao extends DatabaseAccessor<Database> with _$ExampleDaoMixin {
-  ExampleDao(Database db) : super(db);
+@DriftAccessor(tables: [Ingredients, Categories, Recipes, IngredientInRecipes])
+class ExampleDao extends DatabaseAccessor<MyDatabase> with _$ExampleDaoMixin {
+  ExampleDao(MyDatabase db) : super(db);
 
   Stream<List<Recipe>> getRecipes() {
     return select(recipes).watch();
@@ -73,7 +73,7 @@ class ExampleDao extends DatabaseAccessor<Database> with _$ExampleDaoMixin {
   }
 }
 
-@UseMoor(tables: [
+@DriftDatabase(tables: [
   Categories,
   Recipes,
   Ingredients,
@@ -90,8 +90,8 @@ class ExampleDao extends DatabaseAccessor<Database> with _$ExampleDaoMixin {
 }, daos: [
   ExampleDao
 ])
-class Database extends _$Database {
-  Database(QueryExecutor e) : super(e);
+class MyDatabase extends _$MyDatabase {
+  MyDatabase(QueryExecutor e) : super(e);
 
   @override
   int get schemaVersion => 1;

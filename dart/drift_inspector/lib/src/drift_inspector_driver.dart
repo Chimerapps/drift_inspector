@@ -1,30 +1,31 @@
 import 'dart:convert';
 
 import 'package:dart_service_announcement/dart_service_announcement.dart';
-import 'package:moor/moor.dart';
-import 'package:moor/sqlite_keywords.dart';
-import 'package:moor_inspector/src/uuid.dart';
+import 'package:drift/drift.dart';
+import 'package:drift/sqlite_keywords.dart';
+import 'package:uuid/uuid.dart';
 
-import 'moor_inspector_server_base.dart';
-import 'moore_inspector_empty.dart'
-    if (dart.library.html) 'package:moor_inspector/src/moor_inspector_server_web.dart'
-    if (dart.library.io) 'package:moor_inspector/src/moor_inspector_server.dart';
+import 'drift_inspector_server_base.dart';
+import 'drift_inspector_empty.dart'
+    if (dart.library.html) 'package:drift_inspector/src/drift_inspector_server_web.dart'
+    if (dart.library.io) 'package:drift_inspector/src/drift_inspector_server.dart';
 
-const _ANNOUNCEMENT_PORT = 6395;
+const _announcementPort = 6395;
 
-const _VARIABLE_TYPE_STRING = 'string';
-const _VARIABLE_TYPE_BOOL = 'bool';
-const _VARIABLE_TYPE_INT = 'int';
-const _VARIABLE_TYPE_REAL = 'real';
-const _VARIABLE_TYPE_BLOB = 'blob';
-const _VARIABLE_TYPE_DATETIME = 'datetime';
+const _variableTypeString = 'string';
+const _variableTypeBool = 'bool';
+const _variableTypeInt = 'int';
+const _variableTypeReal = 'real';
+const _variableTypeBlob = 'blob';
+const _variableTypeDateTime = 'datetime';
 
-class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
+class DrifteInspectorDriver extends ToolingServer
+    implements ConnectionListener {
   final _databases = <DatabaseHolder>[];
-  late final MoorInspectorServer _server;
+  late final DriftInspectorServer _server;
   final String _bundleId;
   final String? _icon;
-  final String _tag = SimpleUUID.uuid().substring(0, 6);
+  final String _tag = const Uuid().v4().substring(0, 6);
   late final BaseServerAnnouncementManager _announcementManager;
   late List<int> _serverIdData;
   late final List<int> _serverProtocolData;
@@ -35,7 +36,7 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
   @override
   int get protocolVersion => 1;
 
-  MooreInspectorDriver(
+  DrifteInspectorDriver(
     List<DatabaseHolder> databases,
     this._bundleId,
     this._icon,
@@ -48,7 +49,7 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
 
     _server.connectionListener = this;
     _announcementManager =
-        ServerAnnouncementManager(_bundleId, _ANNOUNCEMENT_PORT, this);
+        ServerAnnouncementManager(_bundleId, _announcementPort, this);
     if (_icon != null) {
       _announcementManager.addExtension(IconExtension(_icon!));
     }
@@ -68,7 +69,7 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
   }
 
   @override
-  void onNewConnection(MooreInspectorConnection connection) {
+  void onNewConnection(DrifteInspectorConnection connection) {
     connection
       ..sendMessageUTF8(_serverProtocolData)
       ..sendMessageUTF8(_serverIdData);
@@ -79,13 +80,13 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
         .map((tuple) => _buildTableModel(tuple.name, tuple.id, tuple.database))
         .toList();
 
-    final jsonObject = Map<String, dynamic>();
+    final jsonObject = <String, dynamic>{};
     jsonObject['databases'] = tableModels;
     jsonObject['bundleId'] = _bundleId;
     jsonObject['icon'] = _icon;
     jsonObject['protocolVersion'] = protocolVersion;
 
-    final wrapper = Map<String, dynamic>();
+    final wrapper = <String, dynamic>{};
     wrapper['type'] = 'serverInfo';
     wrapper['body'] = jsonObject;
 
@@ -95,23 +96,23 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
 
   Map<String, dynamic> _buildTableModel(
       String name, String id, GeneratedDatabase db) {
-    final root = Map<String, dynamic>();
+    final root = <String, dynamic>{};
     root['name'] = name;
     root['id'] = id;
 
-    final structure = Map<String, dynamic>();
+    final structure = <String, dynamic>{};
     root['structure'] = structure;
     structure['version'] = db.schemaVersion;
 
     structure['tables'] = db.allTables.map((tableInfo) {
-      final table = Map<String, dynamic>();
+      final table = <String, dynamic>{};
       table['sqlName'] = tableInfo.actualTableName;
       table['withoutRowId'] = tableInfo.withoutRowId;
       table['primaryKey'] =
           tableInfo.$primaryKey.map((column) => column.$name).toList();
 
       table['columns'] = tableInfo.$columns.map((column) {
-        final columnData = Map<String, dynamic>();
+        final columnData = <String, dynamic>{};
 
         columnData['name'] = column.$name;
         columnData['isRequired'] = column.requiredDuringInsert;
@@ -149,14 +150,14 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
     final data = await select.get();
     if (!sendResponse) return Future.value(List.empty());
 
-    final jsonData = Map<String, dynamic>();
+    final jsonData = <String, dynamic>{};
     jsonData['databaseId'] = databaseId;
     jsonData['requestId'] = requestId;
 
     if (data.isNotEmpty) {
-      final columns = Set<String>();
+      final columns = <String>{};
       jsonData['data'] = data.map((row) {
-        final rowItem = Map<String, dynamic>();
+        final rowItem = <String, dynamic>{};
         row.data.forEach((key, value) {
           columns.add(key);
           rowItem[key] = value;
@@ -166,7 +167,7 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
       jsonData['columns'] = columns.toList(growable: false);
     }
 
-    final wrapper = Map<String, dynamic>();
+    final wrapper = <String, dynamic>{};
     wrapper['type'] = 'filterResult';
     wrapper['body'] = jsonData;
 
@@ -195,12 +196,12 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
     );
     if (!sendResponse) return Future.value(List.empty());
 
-    final jsonData = Map<String, dynamic>();
+    final jsonData = <String, dynamic>{};
     jsonData['databaseId'] = databaseId;
     jsonData['requestId'] = requestId;
     jsonData['numUpdated'] = numUpdated;
 
-    final wrapper = Map<String, dynamic>();
+    final wrapper = <String, dynamic>{};
     wrapper['type'] = 'updateResult';
     wrapper['body'] = jsonData;
 
@@ -212,21 +213,21 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
       return const Variable(null);
     }
     switch (e.type) {
-      case _VARIABLE_TYPE_STRING:
+      case _variableTypeString:
         return Variable.withString(e.data as String);
-      case _VARIABLE_TYPE_BOOL:
+      case _variableTypeBool:
         return Variable.withBool(e.data as bool);
-      case _VARIABLE_TYPE_INT:
+      case _variableTypeInt:
         return Variable.withInt(e.data as int);
-      case _VARIABLE_TYPE_REAL:
+      case _variableTypeReal:
         return Variable.withReal(e.data as double);
-      case _VARIABLE_TYPE_BLOB:
+      case _variableTypeBlob:
         return Variable.withBlob(Uint8List.fromList(e.data as List<int>));
-      case _VARIABLE_TYPE_DATETIME:
+      case _variableTypeDateTime:
         return Variable.withDateTime(
             DateTime.fromMicrosecondsSinceEpoch(e.data as int, isUtc: true));
     }
-    throw MoorInspectorException(
+    throw DriftInspectorException(
         'Could not map variable type: ${e.type}, no mapping known');
   }
 
@@ -249,20 +250,20 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
 
     final tableData = <Map<String, dynamic>>[];
 
-    final jsonData = Map<String, dynamic>();
+    final jsonData = <String, dynamic>{};
     jsonData['databaseId'] = databaseId;
     jsonData['requestId'] = requestId;
     jsonData['schemas'] = schemas;
     jsonData['data'] = tableData;
 
     await Future.wait(filteredTables.map((e) async {
-      final root = Map<String, dynamic>();
+      final root = <String, dynamic>{};
       final queryResult =
           await db.customSelect('SELECT * FROM ${e.actualTableName}').get();
 
       root['name'] = e.actualTableName;
       root['data'] = queryResult.map((row) {
-        final rowItem = Map<String, dynamic>();
+        final rowItem = <String, dynamic>{};
         row.data.forEach((key, value) {
           rowItem[key] = value;
         });
@@ -272,7 +273,7 @@ class MooreInspectorDriver extends ToolingServer implements ConnectionListener {
       tableData.add(root);
     }));
 
-    final wrapper = Map<String, dynamic>();
+    final wrapper = <String, dynamic>{};
     wrapper['type'] = 'exportResult';
     wrapper['body'] = jsonData;
 
@@ -305,10 +306,10 @@ class NoSuchDatabaseException implements Exception {
   String toString() => 'No database with given id found';
 }
 
-class MoorInspectorException implements Exception {
+class DriftInspectorException implements Exception {
   final String message;
 
-  MoorInspectorException(this.message);
+  DriftInspectorException(this.message);
 
   @override
   String toString() => message;
@@ -354,7 +355,9 @@ void _createTableStatement(TableInfo table, GenerationContext context) {
   final constraints = dslTable.customConstraints;
 
   for (var i = 0; i < constraints.length; i++) {
-    context.buffer..write(', ')..write(constraints[i]);
+    context.buffer
+      ..write(', ')
+      ..write(constraints[i]);
   }
 
   context.buffer.write(')');
@@ -368,7 +371,7 @@ void _createTableStatement(TableInfo table, GenerationContext context) {
 }
 
 extension _ListExtension<T> on List<T> {
-  T? firstOrNull(bool test(T element)) {
+  T? firstOrNull(bool Function(T element) test) {
     final index = indexWhere(test);
     if (index >= 0) return this[index];
     return null;
