@@ -1,15 +1,15 @@
 def versions = [
         kotlin            : '1.5.31',
-        websocket         : '1.5.1',
+        websocket         : '1.5.2',
         intelliJPlugin    : '0.4.8',
         minIntelliJ       : '2018.2',
-        discoveryLib      : '3.0.0',
-        discoveryPluginLib: '3.0.0',
-        sqlite            : '3.34.0',
+        discoveryLib      : '4.0.0',
+        discoveryPluginLib: '4.0.0',
+        sqlite            : '3.36.0.3',
         dokkaPlugin       : '0.9.17',
         versionsPlugin    : '0.36.0',
-        commonText        : '1.8',
-        sqlParser         : '4.0',
+        commonText        : '1.9',
+        sqlParser         : '4.2',
 ]
 
 ext.versions = versions

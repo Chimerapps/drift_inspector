@@ -46,7 +46,7 @@ dependencies {
             exclude group: 'org.slf4j', module: 'slf4j-api'
         }
     }
-    patch('com.google.code.gson:gson:2.8.6')
+    patch('com.google.code.gson:gson:2.8.9')
     patch('com.googlecode.jarjar:jarjar:1.3')
 }
 
@@ -55,8 +55,8 @@ tasks.create("buildTranslationsEnum") {
         def translationProperties = new Properties()
         translationProperties.load(project.rootProject.file("plugin/src/main/resources/translations/translations.properties").newInputStream())
 
-        def file = project.rootProject.file("plugin/src/main/kotlin/com/chimerapps/moorinspector/ui/util/localization/Tr.kt")
-        file.write "package com.chimerapps.moorinspector.ui.util.localization\n\n"
+        def file = project.rootProject.file("plugin/src/main/kotlin/com/chimerapps/driftinspector/ui/util/localization/Tr.kt")
+        file.write "package com.chimerapps.driftinspector.ui.util.localization\n\n"
         file << "enum class Tr(val key: String) {\n"
         def sorted = new TreeSet<String>()
         translationProperties.propertyNames().each {
