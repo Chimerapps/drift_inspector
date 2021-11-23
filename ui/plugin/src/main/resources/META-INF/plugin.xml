@@ -1,18 +1,28 @@
 <idea-plugin>
     <id>com.chimerapps.moorinspector</id>
-    <name>Database Inspector</name>
-    <version>0.1.6</version>
+    <name>Drift Database Inspector</name>
+    <version>0.2.0</version>
     <vendor email="support@chimerapps.com" url="https://github.com/Chimerapps">chimerapps</vendor>
 
-    <description>This plugin enables the moor inspector ui inside the IDE. Use the moor_inspector dart/flutter library
+    <description>This plugin enables the drift inspector ui inside the IDE. Use the drift_inspector dart/flutter library
         to connect and inspect your databases during development. After running your dart/flutter app, use the connect
         button to discover and connect your process/device and start inspecting!
     </description>
 
     <change-notes><![CDATA[
         <p>
+            <b>0.2.0</b>
+            Updated release to drop the 'moor' name in favor of the renamed 'drift' package.
+
+            Note: Connections to the old moor_inspector will still work
+            <ul>
+                <li>Fixed issue with real i-devices not showing up</li>
+                <li>Added experimental export support</li>
+            </ul>
+        </p>
+        <p>
             <b>0.1.6</b>
-            Note that this is the last version of this plugin before it migrates to either 'drift' (the new name of the moor package)
+            Note that this is the last version of this plugin before it migrates to either 'drift' (the new name of the drift package)
             or a different name altogether where we support more than just databases
             <ul>
                 <li>Fixed loading translations causing a intelliJ error</li>
@@ -52,15 +62,15 @@
     <depends>com.intellij.modules.lang</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow id="Moor Inspector" anchor="bottom"
-                    factoryClass="com.chimerapps.moorinspector.ui.InspectorToolWindowFactory"
-                    icon="/moor_inspector_small.png"/>
-        <applicationConfigurable instance="com.chimerapps.moorinspector.ui.settings.ApplicationConfigurationProvider"
-                                 id="MoorInspectorRoot" displayName="Moor Inspector"/>
+        <toolWindow id="Drift Inspector" anchor="bottom"
+                    factoryClass="com.chimerapps.driftinspector.ui.InspectorToolWindowFactory"
+                    icon="/drift_inspector_small.png"/>
+        <applicationConfigurable instance="com.chimerapps.driftinspector.ui.settings.ApplicationConfigurationProvider"
+                                 id="DriftInspectorRoot" displayName="Drift Inspector"/>
 
-        <projectService serviceImplementation="com.chimerapps.moorinspector.ui.settings.MoorProjectSettings"/>
+        <projectService serviceImplementation="com.chimerapps.driftinspector.ui.settings.DriftProjectSettings"/>
         <applicationService
-                serviceImplementation="com.chimerapps.moorinspector.ui.settings.MoorInspectorSettings"/>
+                serviceImplementation="com.chimerapps.driftinspector.ui.settings.DriftInspectorSettings"/>
     </extensions>
 
 </idea-plugin>
