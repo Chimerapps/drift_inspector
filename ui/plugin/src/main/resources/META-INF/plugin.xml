@@ -13,6 +13,8 @@
         <p>
             <b>0.2.0</b>
             Updated release to drop the 'moor' name in favor of the renamed 'drift' package.
+
+            Note: Connections to the old moor_inspector will still work
             <ul>
                 <li>Fixed issue with real i-devices not showing up</li>
                 <li>Added experimental export support</li>

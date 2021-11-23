@@ -17,6 +17,7 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.project.Project
 import com.intellij.ui.AnActionButton
@@ -363,14 +364,16 @@ class DriftInspectorTableView(
 
         val database = currentDatabase ?: return
 
-        runWriteAction {
-            val handler = SqlExportHandler(file)
-            handler.handle(exportResponse, database)
-            NotificationUtil.info(
-                Tr.ActionExportCompleteTitle.tr(),
-                Tr.ActionExportCompleteBody.tr(file.absolutePath, file.name),
-                project
-            )
+        ApplicationManager.getApplication().invokeLater {
+            runWriteAction {
+                val handler = SqlExportHandler(file)
+                handler.handle(exportResponse, database)
+                NotificationUtil.info(
+                    Tr.ActionExportCompleteTitle.tr(),
+                    Tr.ActionExportCompleteBody.tr(file.absolutePath, file.name),
+                    project
+                )
+            }
         }
     }
 }
