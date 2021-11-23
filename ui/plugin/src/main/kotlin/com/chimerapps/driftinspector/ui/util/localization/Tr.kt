@@ -5,6 +5,8 @@ enum class Tr(val key: String) {
     ActionConnectDescription("driftinspector.action.connect.description"), //Connect to drift inspector server
     ActionDisconnect("driftinspector.action.disconnect"), //Disconnect
     ActionDisconnectDescription("driftinspector.action.disconnect.description"), //Disconnect from drift inspector server
+    ActionExportCompleteBody("driftinspector.action.export.complete.body"), //<html>Export completed to <a href="file://%s">%s</a></html>
+    ActionExportCompleteTitle("driftinspector.action.export.complete.title"), //Export completed
     ActionNewSession("driftinspector.action.new.session"), //New session
     ActionNewSessionDescription("driftinspector.action.new.session.description"), //Start a new session
     PreferencesBrowseAdbDescription("driftinspector.preferences.browse.adb.description"), //Path to adb

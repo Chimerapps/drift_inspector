@@ -1,21 +1,23 @@
 package com.chimerapps.driftinspector.ui.view
 
-import com.chimerapps.driftinspector.client.protocol.ExportResponse
 import com.chimerapps.driftinspector.client.protocol.DriftInspectorColumn
 import com.chimerapps.driftinspector.client.protocol.DriftInspectorDatabase
 import com.chimerapps.driftinspector.client.protocol.DriftInspectorTable
+import com.chimerapps.driftinspector.client.protocol.ExportResponse
 import com.chimerapps.driftinspector.export.sql.SqlExportHandler
 import com.chimerapps.driftinspector.ui.actions.RefreshAction
 import com.chimerapps.driftinspector.ui.util.NotificationUtil
 import com.chimerapps.driftinspector.ui.util.ensureMain
 import com.chimerapps.driftinspector.ui.util.list.DiffUtilComparator
 import com.chimerapps.driftinspector.ui.util.list.ListUpdateHelper
+import com.chimerapps.driftinspector.ui.util.localization.Tr
 import com.chimerapps.driftinspector.ui.util.mapNotNull
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.project.Project
 import com.intellij.ui.AnActionButton
 import com.intellij.ui.SearchTextField
@@ -356,14 +358,20 @@ class DriftInspectorTableView(
         }
     }
 
-    fun onExportResult(databaseId: String, requestId: String, exportResponse: ExportResponse) {
+    fun onExportResult(databaseId: String, requestId: String, exportResponse: ExportResponse, file: File) {
         if (currentDbId != databaseId) return
 
         val database = currentDatabase ?: return
 
-        //TODO FIXME STOPSHIP
-        val handler = SqlExportHandler(File("test.db").also { it.delete() })
-        handler.handle(exportResponse, database)
+        runWriteAction {
+            val handler = SqlExportHandler(file)
+            handler.handle(exportResponse, database)
+            NotificationUtil.info(
+                Tr.ActionExportCompleteTitle.tr(),
+                Tr.ActionExportCompleteBody.tr(file.absolutePath, file.name),
+                project
+            )
+        }
     }
 }
 

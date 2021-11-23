@@ -16,11 +16,13 @@ import com.chimerapps.driftinspector.ui.actions.DisconnectAction
 import com.chimerapps.driftinspector.ui.settings.DriftInspectorSettings
 import com.chimerapps.driftinspector.ui.util.NotificationUtil
 import com.chimerapps.driftinspector.ui.util.ensureMain
+import com.chimerapps.driftinspector.ui.util.file.chooseSaveFile
 import com.chimerapps.driftinspector.ui.util.preferences.AppPreferences
 import com.chimerapps.driftinspector.ui.view.*
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import com.intellij.ui.JBSplitter
@@ -28,6 +30,7 @@ import com.intellij.ui.content.Content
 import com.intellij.util.IconUtil
 import java.awt.BorderLayout
 import java.io.File
+import java.io.FileOutputStream
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
 
@@ -52,6 +55,7 @@ class InspectorSessionWindow(
         tableView.update(db.id, db, db.name, table)
     }
     private val tableView = DriftInspectorTableView(this, project)
+    private var pendingExportFile: File? = null
 
     var connectionMode: ConnectionMode = ConnectionMode.MODE_DISCONNECTED
         private set(value) {
@@ -202,7 +206,7 @@ class InspectorSessionWindow(
     }
 
     override fun onExportResult(databaseId: String, requestId: String, exportResponse: ExportResponse) {
-        tableView.onExportResult(databaseId, requestId, exportResponse)
+        tableView.onExportResult(databaseId, requestId, exportResponse, pendingExportFile ?: return)
     }
 
     override fun updateItem(
@@ -220,7 +224,10 @@ class InspectorSessionWindow(
     }
 
     override fun export(requestId: String, databaseId: String, tableNames: List<String>) {
-        client?.export(requestId, databaseId, tableNames)
+        val client = client ?: return
+
+        pendingExportFile = chooseSaveFile("Save to", "") ?: return
+        client.export(requestId, databaseId, tableNames)
     }
 
     fun onWindowClosed() {
