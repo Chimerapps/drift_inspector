@@ -60,7 +60,7 @@ tasks.create("buildTranslationsEnum") {
         file << "enum class Tr(val key: String) {\n"
         def sorted = new TreeSet<String>()
         translationProperties.propertyNames().each {
-            sorted.add(it.toString());
+            sorted.add(it.toString())
         }
         def c = 0
         sorted.each { string ->
@@ -91,8 +91,8 @@ task applyPatch(dependsOn: 'downloadPatchLibs') {
     doLast {
         project.ant {
             taskdef name: "jarjar", classname: "com.tonicsystems.jarjar.JarJarTask", classpath: configurations.patch.asPath
-            jarjar(jarfile: 'lib/gson-2.8.6.patched.jar', filesetmanifest: "merge") {
-                zipfileset(src: 'lib/gson-2.8.6.jar')
+            jarjar(jarfile: 'lib/gson-2.8.9.patched.jar', filesetmanifest: "merge") {
+                zipfileset(src: 'lib/gson-2.8.9.jar')
                 rule pattern: "com.google.gson.**", result: "com.google.gsonpackaged.@1"
             }
         }
@@ -100,11 +100,11 @@ task applyPatch(dependsOn: 'downloadPatchLibs') {
 }
 
 task cleanupDownloadPatchLibs(type: Delete, dependsOn: 'applyPatch') {
-    delete 'lib/gson-2.8.6.jar'
+    delete 'lib/gson-2.8.9.jar'
 }
 
 task maybePatch {
-    if (new File('lib/gson-2.8.6.patched.jar').exists()) return
+    if (new File('lib/gson-2.8.9.patched.jar').exists()) return
     dependsOn applyPatch
     dependsOn cleanupDownloadPatchLibs
 }
