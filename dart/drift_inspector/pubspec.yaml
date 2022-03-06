@@ -1,6 +1,6 @@
 name: drift_inspector
 description: A dart library to enable development time inspection and modification of your drift databases
-version: 1.0.0
+version: 1.0.1
 homepage: https://github.com/Chimerapps/drift_inspector
 
 environment:

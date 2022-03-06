@@ -6,6 +6,7 @@ import 'drift.dart';
 Future<void> main(List<String> arguments) async {
   final database = MyDatabase(NativeDatabase.memory());
 
+  //ignore: deprecated_member_use
   final driftInspectorBuilder = DriftInspectorBuilder()
     ..bundleId = 'com.example.text'
     ..icon = 'flutter'

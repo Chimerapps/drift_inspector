@@ -116,7 +116,7 @@ class DrifteInspectorDriver extends ToolingServer
 
         columnData['name'] = column.$name;
         columnData['isRequired'] = column.requiredDuringInsert;
-        columnData['type'] = column.typeName;
+        columnData['type'] = column.type.sqlName(SqlDialect.sqlite);
         columnData['nullable'] = column.$nullable;
         columnData['autoIncrement'] = column.hasAutoIncrement;
 

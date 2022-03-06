@@ -3,6 +3,7 @@ import 'package:drift_inspector/src/drift_inspector_driver.dart';
 import 'package:uuid/uuid.dart';
 
 ///Builder for the drift inspector
+@Deprecated('This dart package is no longer maintained, see https://github.com/Chimerapps/drift_inspector/wiki/Deprecation')
 class DriftInspectorBuilder {
   final _databases = <DatabaseHolder>[];
 

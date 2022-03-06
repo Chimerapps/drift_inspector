@@ -1,3 +1,10 @@
+# DEPRECATION NOTICE
+
+This package is being replaced with a more powerful inspector system. Please migrate to: https://pub.dev/packages/drift_local_storage_inspector
+Follow the migration instructions outlined in: https://github.com/Chimerapps/drift_inspector/wiki/Deprecation
+
+## Old instructions
+
 Drift inspector dart library
 
 Helper library for drift databases, enables the drift inspector intellij plugin to inspect and edit your drift databases during development
