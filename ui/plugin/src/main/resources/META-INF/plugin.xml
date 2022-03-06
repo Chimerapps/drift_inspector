@@ -1,15 +1,21 @@
 <idea-plugin>
     <id>com.chimerapps.moorinspector</id>
     <name>Drift Database Inspector</name>
-    <version>0.2.0</version>
+    <version>0.2.1</version>
     <vendor email="support@chimerapps.com" url="https://github.com/Chimerapps">chimerapps</vendor>
 
-    <description>This plugin enables the drift inspector ui inside the IDE. Use the drift_inspector dart/flutter library
+    <description>THIS PLUGIN IS DEPRECATED, use the local storage inspector plugin instead!!
+        This plugin enables the drift inspector ui inside the IDE. Use the drift_inspector dart/flutter library
         to connect and inspect your databases during development. After running your dart/flutter app, use the connect
         button to discover and connect your process/device and start inspecting!
     </description>
 
     <change-notes><![CDATA[
+        <b> !! THIS PLUGIN IS DEPRECATED !! </b>
+        <p>
+            <b>0.2.1</b>
+            Deprecation notice has been added, please use the local storage inspector plugin instead. Read more here: <a href="https://github.com/Chimerapps/drift_inspector/wiki/Deprecation">https://github.com/Chimerapps/drift_inspector/wiki/Deprecation</a>
+        </p>
         <p>
             <b>0.2.0</b>
             Updated release to drop the 'moor' name in favor of the renamed 'drift' package.

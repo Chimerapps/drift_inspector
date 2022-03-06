@@ -68,7 +68,7 @@ class DriftInspectorTableView(
         }
         actionGroup.addAction(refreshAction)
 
-        toolbar = ActionManager.getInstance().createActionToolbar("Drifte Inspector", actionGroup, false)
+        toolbar = ActionManager.getInstance().createActionToolbar("Drift Inspector", actionGroup, false)
 
         rawQuery.textEditor.addActionListener {
             checkAndExecuteRawQuery(rawQuery.text.trim())
